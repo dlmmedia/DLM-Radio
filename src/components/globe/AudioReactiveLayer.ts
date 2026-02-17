@@ -2,12 +2,11 @@ import * as THREE from "three";
 import { getAudioData } from "@/hooks/useAudioData";
 
 /**
- * MapLibre GL custom layer that renders audio-reactive pulse rings
+ * MapLibre GL custom layer that renders an audio-reactive glow point
  * at the currently playing station's position on the globe.
  *
- * Atmosphere and particle effects are handled separately by AudioVisualOverlay
- * (canvas overlay) because MapLibre's globe projection coordinate system
- * makes it impractical to render screen-space 3D effects via a custom layer.
+ * Replaces the old concentric torus rings with a single subtle glowing
+ * sphere that pulses with bass/energy, keeping the map unobstructed.
  */
 export class AudioReactiveLayer {
   id = "audio-reactive";
@@ -24,7 +23,11 @@ export class AudioReactiveLayer {
   private stationLat = 0;
   private hasStation = false;
 
-  private pulseMeshes: THREE.Mesh[] = [];
+  private glowMesh!: THREE.Mesh;
+  private glowHaloMesh!: THREE.Mesh;
+
+  /** Genre-based hue in the 0-1 range */
+  private genreHue = 0.6;
 
   setStationPosition(lng: number, lat: number) {
     this.stationLng = lng;
@@ -32,31 +35,40 @@ export class AudioReactiveLayer {
     this.hasStation = true;
   }
 
+  setGenreHue(hue: number) {
+    this.genreHue = hue;
+  }
+
   onAdd(map: maplibregl.Map, gl: WebGLRenderingContext) {
     this.map = map;
     this.camera = new THREE.Camera();
     this.scene = new THREE.Scene();
 
-    // Pulse rings at station position (3 concentric rings)
-    for (let i = 0; i < 3; i++) {
-      const ringGeo = new THREE.TorusGeometry(
-        0.02 + i * 0.015,
-        0.002,
-        8,
-        64
-      );
-      const ringMat = new THREE.MeshBasicMaterial({
-        color: new THREE.Color(0x3b82f6),
-        transparent: true,
-        opacity: 0.6 - i * 0.15,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false,
-      });
-      const ring = new THREE.Mesh(ringGeo, ringMat);
-      ring.visible = false;
-      this.scene.add(ring);
-      this.pulseMeshes.push(ring);
-    }
+    // Small glowing sphere at station location
+    const sphereGeo = new THREE.SphereGeometry(0.008, 16, 16);
+    const sphereMat = new THREE.MeshBasicMaterial({
+      color: new THREE.Color(0x3b82f6),
+      transparent: true,
+      opacity: 0.7,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+    this.glowMesh = new THREE.Mesh(sphereGeo, sphereMat);
+    this.glowMesh.visible = false;
+    this.scene.add(this.glowMesh);
+
+    // Larger soft halo around the glow point
+    const haloGeo = new THREE.SphereGeometry(0.025, 16, 16);
+    const haloMat = new THREE.MeshBasicMaterial({
+      color: new THREE.Color(0x3b82f6),
+      transparent: true,
+      opacity: 0.15,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+    this.glowHaloMesh = new THREE.Mesh(haloGeo, haloMat);
+    this.glowHaloMesh.visible = false;
+    this.scene.add(this.glowHaloMesh);
 
     this.renderer = new THREE.WebGLRenderer({
       canvas: map.getCanvas(),
@@ -72,7 +84,6 @@ export class AudioReactiveLayer {
     this.time += 0.016;
     const audioData = getAudioData();
 
-    // Position and animate pulse rings at the station location
     if (
       this.hasStation &&
       typeof (this.map.transform as any).getMatrixForModel === "function"
@@ -83,33 +94,44 @@ export class AudioReactiveLayer {
           0
         );
 
-        for (let i = 0; i < this.pulseMeshes.length; i++) {
-          const ring = this.pulseMeshes[i];
-          ring.visible = true;
+        // Glow point - pulses subtly with bass
+        const bassPulse = 1 + audioData.bass * 0.8;
+        const glowScale = bassPulse * 5000;
+        const mat4 = new THREE.Matrix4().fromArray(modelMatrix);
+        mat4.scale(new THREE.Vector3(glowScale, glowScale, glowScale));
 
-          const audioScale = 1 + audioData.mid * 2 + i * 0.5;
-          const scale = audioScale * 5000;
-          const mat4 = new THREE.Matrix4().fromArray(modelMatrix);
-          mat4.scale(new THREE.Vector3(scale, scale, scale));
+        this.glowMesh.visible = true;
+        this.glowMesh.matrixAutoUpdate = false;
+        this.glowMesh.matrix.copy(mat4);
+        this.glowMesh.matrixWorldNeedsUpdate = true;
 
-          ring.matrixAutoUpdate = false;
-          ring.matrix.copy(mat4);
-          ring.matrixWorldNeedsUpdate = true;
+        const glowMat = this.glowMesh.material as THREE.MeshBasicMaterial;
+        glowMat.opacity = 0.5 + audioData.energy * 0.4;
+        glowMat.color.setHSL(this.genreHue, 0.7, 0.6);
 
-          const rMat = ring.material as THREE.MeshBasicMaterial;
-          rMat.opacity =
-            Math.max(0, 0.5 - i * 0.15) * (0.5 + audioData.energy);
+        // Halo - breathes with energy
+        const haloScale = (1 + audioData.energy * 1.5) * 5000;
+        const haloMat4 = new THREE.Matrix4().fromArray(modelMatrix);
+        haloMat4.scale(new THREE.Vector3(haloScale, haloScale, haloScale));
 
-          const hue = (this.time * 0.1 + i * 0.1) % 1;
-          rMat.color.setHSL(hue, 0.8, 0.6);
-        }
+        this.glowHaloMesh.visible = true;
+        this.glowHaloMesh.matrixAutoUpdate = false;
+        this.glowHaloMesh.matrix.copy(haloMat4);
+        this.glowHaloMesh.matrixWorldNeedsUpdate = true;
+
+        const haloMaterial = this.glowHaloMesh
+          .material as THREE.MeshBasicMaterial;
+        haloMaterial.opacity =
+          0.08 +
+          audioData.energy * 0.1 +
+          Math.sin(this.time * 2) * 0.02;
+        haloMaterial.color.setHSL(this.genreHue, 0.5, 0.5);
       } catch {
         // getMatrixForModel may not be available in all versions
       }
     } else {
-      for (const ring of this.pulseMeshes) {
-        ring.visible = false;
-      }
+      this.glowMesh.visible = false;
+      this.glowHaloMesh.visible = false;
     }
 
     // Get the projection matrix from MapLibre

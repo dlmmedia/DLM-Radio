@@ -38,13 +38,16 @@ export function useAudioEngine() {
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current.src = "";
+        audioRef.current = null;
       }
       if (audioCtxRef.current) {
         audioCtxRef.current.close().catch(() => {});
         audioCtxRef.current = null;
         analyserRef.current = null;
         sourceRef.current = null;
+        dataArrayRef.current = null;
       }
+      lastStationRef.current = null;
     };
   }, []);
 
@@ -145,6 +148,10 @@ export function useAudioEngine() {
     const onPlaying = () => {
       setLoading(false);
       setPlaying(true);
+      ensureAnalyser();
+      if (audioCtxRef.current?.state === "suspended") {
+        audioCtxRef.current.resume();
+      }
     };
 
     audio.addEventListener("canplay", onCanPlay);
@@ -166,6 +173,7 @@ export function useAudioEngine() {
     if (!audio) return;
 
     if (isPlaying) {
+      ensureAnalyser();
       audio.play().catch(() => setPlaying(false));
       cancelAnimationFrame(animFrameRef.current);
       animFrameRef.current = requestAnimationFrame(updateAudioData);
@@ -176,7 +184,7 @@ export function useAudioEngine() {
       audio.pause();
       cancelAnimationFrame(animFrameRef.current);
     }
-  }, [isPlaying, setPlaying, updateAudioData]);
+  }, [isPlaying, setPlaying, updateAudioData, ensureAnalyser]);
 
   return audioRef;
 }

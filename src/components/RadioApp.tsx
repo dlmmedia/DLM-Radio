@@ -30,6 +30,22 @@ const AudioVisualOverlay = dynamic(
   { ssr: false }
 );
 
+const SpaceBackground = dynamic(
+  () =>
+    import("./globe/SpaceBackground").then((m) => ({
+      default: m.SpaceBackground,
+    })),
+  { ssr: false }
+);
+
+const MoodToggle = dynamic(
+  () =>
+    import("./globe/MoodToggle").then((m) => ({
+      default: m.MoodToggle,
+    })),
+  { ssr: false }
+);
+
 export function RadioApp() {
   useAudioEngine();
   const { addToHistory } = useHistory();
@@ -47,7 +63,20 @@ export function RadioApp() {
     setDrawerStation,
     setStation,
     setStationList,
+    cycleVisualMood,
   } = useRadioStore();
+
+  // Auto-rotate visual mood every 4 minutes while playing
+  const isPlaying = useRadioStore((s) => s.isPlaying);
+  useEffect(() => {
+    if (!isPlaying) return;
+
+    const timer = setInterval(() => {
+      useRadioStore.getState().cycleVisualMood();
+    }, 4 * 60 * 1000);
+
+    return () => clearInterval(timer);
+  }, [isPlaying]);
 
   // Record listening to history & recommendations
   useEffect(() => {
@@ -130,6 +159,10 @@ export function RadioApp() {
         case "4":
           setPanelTab("search");
           break;
+        case "v":
+        case "V":
+          cycleVisualMood();
+          break;
       }
     },
     [
@@ -145,6 +178,7 @@ export function RadioApp() {
       setDrawerStation,
       setStation,
       setStationList,
+      cycleVisualMood,
     ]
   );
 
@@ -154,13 +188,16 @@ export function RadioApp() {
   }, [handleKeyDown]);
 
   return (
-    <div className="h-screen w-screen overflow-hidden bg-background">
-      {/* Globe */}
-      <div className="absolute inset-0">
+    <div className="relative h-screen w-screen overflow-hidden bg-black">
+      {/* Music-reactive space background (behind the globe) */}
+      <SpaceBackground />
+
+      {/* Globe with transparent background */}
+      <div className="absolute inset-0 z-[1]">
         <RadioGlobe />
       </div>
 
-      {/* Audio-reactive visual overlay (glow + particles) */}
+      {/* Audio visualizer overlay (above the globe) */}
       <AudioVisualOverlay />
 
       {/* Panel toggle */}
@@ -174,6 +211,9 @@ export function RadioApp() {
           <Menu className="h-4 w-4" />
         </Button>
       )}
+
+      {/* Visual mood toggle */}
+      <MoodToggle />
 
       {/* Side Panel */}
       <SidePanel />

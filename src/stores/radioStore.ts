@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import type { Station, PanelTab } from "@/lib/types";
+import { MOOD_ORDER, type VisualMood } from "@/lib/visual-moods";
 
 interface RadioState {
   // Playback
@@ -20,6 +21,9 @@ interface RadioState {
   panelOpen: boolean;
   drawerStation: Station | null;
   searchQuery: string;
+
+  // Visual
+  visualMood: VisualMood;
 
   // Explore context
   exploreCity: string | null;
@@ -40,6 +44,8 @@ interface RadioState {
   setDrawerStation: (station: Station | null) => void;
   setSearchQuery: (query: string) => void;
   setExploreLocation: (city: string | null, country: string | null, countryCode: string | null) => void;
+  setVisualMood: (mood: VisualMood) => void;
+  cycleVisualMood: () => void;
 }
 
 export const useRadioStore = create<RadioState>((set, get) => ({
@@ -54,6 +60,7 @@ export const useRadioStore = create<RadioState>((set, get) => ({
   panelOpen: true,
   drawerStation: null,
   searchQuery: "",
+  visualMood: "cosmic" as VisualMood,
   exploreCity: null,
   exploreCountry: null,
   exploreCountryCode: null,
@@ -111,4 +118,12 @@ export const useRadioStore = create<RadioState>((set, get) => ({
       panelTab: "explore",
       panelOpen: true,
     }),
+
+  setVisualMood: (mood) => set({ visualMood: mood }),
+  cycleVisualMood: () => {
+    const current = get().visualMood;
+    const idx = MOOD_ORDER.indexOf(current);
+    const next = MOOD_ORDER[(idx + 1) % MOOD_ORDER.length];
+    set({ visualMood: next });
+  },
 }));

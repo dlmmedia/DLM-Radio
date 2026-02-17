@@ -82,7 +82,7 @@ export function AudioVisualOverlay() {
       const audio = getAudioData();
       time += 0.016;
 
-      // --- Radial glow (reacts to bass and energy) ---
+      // Radial glow (reacts to bass and energy)
       const glowIntensity = audio.energy * 0.7 + audio.bass * 0.3;
       const glowRadius = 120 + glowIntensity * 200 + Math.sin(time * 2) * 15;
 
@@ -122,7 +122,7 @@ export function AudioVisualOverlay() {
         ctx.stroke();
       }
 
-      // --- Particles (react to energy and bass) ---
+      // Particles (react to energy and bass)
       const particles = particlesRef.current;
       for (const p of particles) {
         p.angle += p.speed * 0.01 * (1 + audio.energy * 2);
@@ -159,7 +159,7 @@ export function AudioVisualOverlay() {
     <canvas
       ref={canvasRef}
       className="absolute inset-0 w-full h-full pointer-events-none"
-      style={{ zIndex: 1, opacity: isPlaying ? 1 : 0, transition: "opacity 0.5s ease" }}
+      style={{ zIndex: 2, opacity: isPlaying ? 1 : 0, transition: "opacity 0.5s ease" }}
     />
   );
 }

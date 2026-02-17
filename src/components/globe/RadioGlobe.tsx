@@ -14,6 +14,82 @@ import { stationsToGeoJSON } from "@/lib/geo-utils";
 import { getGenreColor } from "@/lib/constants";
 import type { Station } from "@/lib/types";
 import { AudioReactiveLayer } from "./AudioReactiveLayer";
+import { getAudioData } from "@/hooks/useAudioData";
+
+/**
+ * Convert a hex color string to an HSL hue value (0-1 range).
+ */
+function hexToHue(hex: string): number {
+  const r = parseInt(hex.slice(1, 3), 16) / 255;
+  const g = parseInt(hex.slice(3, 5), 16) / 255;
+  const b = parseInt(hex.slice(5, 7), 16) / 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const d = max - min;
+  if (d === 0) return 0;
+  let h = 0;
+  if (max === r) h = ((g - b) / d + 6) % 6;
+  else if (max === g) h = (b - r) / d + 2;
+  else h = (r - g) / d + 4;
+  return h / 6;
+}
+
+/**
+ * Audio-reactive station marker that pulses with the music.
+ */
+function ReactiveMarker({ station }: { station: Station }) {
+  const markerRef = useRef<HTMLDivElement>(null);
+  const animRef = useRef<number>(0);
+
+  const genreColor = getGenreColor(station.tags);
+
+  useEffect(() => {
+    const el = markerRef.current;
+    if (!el) return;
+
+    const update = () => {
+      const audio = getAudioData();
+      const scale = 1 + audio.bass * 0.4;
+      const glowSize = 12 + audio.energy * 20;
+      const pingScale = 1 + audio.energy * 0.5;
+
+      el.style.transform = `scale(${scale})`;
+      el.style.boxShadow = `0 0 ${glowSize}px ${genreColor}`;
+
+      const pingEl = el.previousElementSibling as HTMLElement | null;
+      if (pingEl) {
+        pingEl.style.transform = `scale(${pingScale})`;
+        pingEl.style.opacity = `${0.3 + audio.energy * 0.3}`;
+      }
+
+      animRef.current = requestAnimationFrame(update);
+    };
+
+    animRef.current = requestAnimationFrame(update);
+    return () => cancelAnimationFrame(animRef.current);
+  }, [genreColor]);
+
+  return (
+    <div className="relative flex items-center justify-center">
+      <div
+        className="absolute h-8 w-8 rounded-full animate-ping"
+        style={{
+          backgroundColor: genreColor,
+          animationDuration: "1.5s",
+          opacity: 0.4,
+        }}
+      />
+      <div
+        ref={markerRef}
+        className="relative h-4 w-4 rounded-full border-2 border-white shadow-lg transition-transform duration-75"
+        style={{
+          backgroundColor: genreColor,
+          boxShadow: `0 0 12px ${genreColor}`,
+        }}
+      />
+    </div>
+  );
+}
 
 function GlobeContent() {
   const { map, isLoaded } = useMap();
@@ -45,6 +121,44 @@ function GlobeContent() {
     loadStations();
   }, []);
 
+  // Make the map background transparent so SpaceBackground shows through
+  useEffect(() => {
+    if (!isLoaded || !map) return;
+
+    const makeTransparent = () => {
+      try {
+        const style = map.getStyle();
+        if (style?.layers) {
+          for (const layer of style.layers) {
+            if (
+              layer.type === "background" ||
+              layer.id === "background" ||
+              layer.id.startsWith("background")
+            ) {
+              map.setPaintProperty(layer.id, "background-color", "rgba(0,0,0,0)");
+              map.setPaintProperty(layer.id, "background-opacity", 0);
+            }
+          }
+        }
+      } catch {
+        // Style may not have a background layer
+      }
+
+      // Also ensure the map canvas itself is transparent
+      const canvas = map.getCanvas();
+      if (canvas) {
+        canvas.style.background = "transparent";
+      }
+    };
+
+    makeTransparent();
+    map.on("styledata", makeTransparent);
+
+    return () => {
+      map.off("styledata", makeTransparent);
+    };
+  }, [isLoaded, map]);
+
   // Add Three.js audio-reactive layer
   useEffect(() => {
     if (!isLoaded || !map) return;
@@ -68,8 +182,7 @@ function GlobeContent() {
     };
   }, [isLoaded, map]);
 
-  // When currentStation changes (from any source), update the audio layer
-  // position and fly the globe to the station's location.
+  // When currentStation changes, update audio layer position + genre hue
   useEffect(() => {
     if (!currentStation?.geo_lat || !currentStation?.geo_long) return;
 
@@ -78,19 +191,31 @@ function GlobeContent() {
         currentStation.geo_long,
         currentStation.geo_lat
       );
+      audioLayerRef.current.setGenreHue(
+        hexToHue(getGenreColor(currentStation.tags))
+      );
     }
 
-    // Skip the flyTo if triggered by a globe click (it already called flyTo)
     if (flyingFromClickRef.current) {
       flyingFromClickRef.current = false;
       return;
     }
 
     if (map) {
+      const currentCenter = map.getCenter();
+      const dlat = currentStation.geo_lat - currentCenter.lat;
+      const dlng = currentStation.geo_long - currentCenter.lng;
+      const angularDist = Math.sqrt(dlat * dlat + dlng * dlng);
+      const duration = Math.min(4000, Math.max(1500, angularDist * 30));
+
       map.flyTo({
         center: [currentStation.geo_long, currentStation.geo_lat],
-        zoom: Math.max(map.getZoom(), 5),
-        duration: 2000,
+        zoom: 7,
+        pitch: 45,
+        bearing: 0,
+        duration,
+        essential: true,
+        curve: 1.5,
       });
     }
   }, [currentStation, map]);
@@ -111,9 +236,6 @@ function GlobeContent() {
         station.countrycode || null
       );
 
-      // Mark that this change originated from a globe click so the
-      // currentStation effect skips its own flyTo (we do it here with
-      // the exact click coordinates for better accuracy).
       flyingFromClickRef.current = true;
       setStation(station);
 
@@ -128,8 +250,12 @@ function GlobeContent() {
 
       map?.flyTo({
         center: coordinates,
-        zoom: Math.max(map.getZoom(), 6),
-        duration: 1500,
+        zoom: 7,
+        pitch: 45,
+        bearing: 0,
+        duration: 2000,
+        essential: true,
+        curve: 1.2,
       });
     },
     [map, setStation, setStationList, setExploreLocation]
@@ -154,22 +280,7 @@ function GlobeContent() {
           latitude={currentStation.geo_lat}
         >
           <MarkerContent>
-            <div className="relative flex items-center justify-center">
-              <div
-                className="absolute h-8 w-8 rounded-full animate-ping opacity-40"
-                style={{
-                  backgroundColor: getGenreColor(currentStation.tags),
-                  animationDuration: "1.5s",
-                }}
-              />
-              <div
-                className="relative h-4 w-4 rounded-full border-2 border-white shadow-lg"
-                style={{
-                  backgroundColor: getGenreColor(currentStation.tags),
-                  boxShadow: `0 0 12px ${getGenreColor(currentStation.tags)}`,
-                }}
-              />
-            </div>
+            <ReactiveMarker station={currentStation} />
           </MarkerContent>
         </MapMarker>
       )}
@@ -194,7 +305,7 @@ export function RadioGlobe() {
       center={[0, 20]}
       zoom={2}
       maxPitch={60}
-      canvasContextAttributes={{ antialias: true }}
+      canvasContextAttributes={{ antialias: true, alpha: true }}
     >
       <GlobeContent />
     </Map>
