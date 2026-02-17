@@ -1,0 +1,93 @@
+"use client";
+
+import { useRadioStore } from "@/stores/radioStore";
+import { getGenreColor, getCountryFlag } from "@/lib/constants";
+import type { Station } from "@/lib/types";
+import { Play, Pause, Radio } from "lucide-react";
+
+interface StationRowProps {
+  station: Station;
+  showCountry?: boolean;
+  onClick?: () => void;
+}
+
+export function StationRow({ station, showCountry = false, onClick }: StationRowProps) {
+  const { currentStation, isPlaying, setStation, setPlaying } = useRadioStore();
+  const isActive = currentStation?.stationuuid === station.stationuuid;
+
+  const handleClick = () => {
+    if (onClick) {
+      onClick();
+      return;
+    }
+    if (isActive) {
+      setPlaying(!isPlaying);
+    } else {
+      setStation(station);
+    }
+  };
+
+  const genre = station.tags?.split(",")[0]?.trim();
+  const flag = showCountry ? getCountryFlag(station.countrycode) : null;
+
+  return (
+    <button
+      onClick={handleClick}
+      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors hover:bg-accent/50 group ${
+        isActive ? "bg-accent/60" : ""
+      }`}
+    >
+      {/* Play indicator / Favicon */}
+      <div className="relative h-8 w-8 flex-shrink-0">
+        {station.favicon ? (
+          <img
+            src={station.favicon}
+            alt=""
+            className="h-8 w-8 rounded object-cover bg-muted"
+            onError={(e) => {
+              (e.target as HTMLImageElement).style.display = "none";
+              (e.target as HTMLImageElement).nextElementSibling?.classList.remove("hidden");
+            }}
+          />
+        ) : null}
+        <div
+          className={`${station.favicon ? "hidden" : ""} h-8 w-8 rounded flex items-center justify-center`}
+          style={{ backgroundColor: getGenreColor(station.tags) + "22" }}
+        >
+          <Radio className="h-3.5 w-3.5" style={{ color: getGenreColor(station.tags) }} />
+        </div>
+        {/* Play overlay on hover */}
+        <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+          {isActive && isPlaying ? (
+            <Pause className="h-3.5 w-3.5 text-white" />
+          ) : (
+            <Play className="h-3.5 w-3.5 text-white ml-0.5" />
+          )}
+        </div>
+      </div>
+
+      {/* Station info */}
+      <div className="min-w-0 flex-1">
+        <div className="text-sm font-medium truncate">
+          {station.name}
+        </div>
+        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+          {genre && (
+            <span style={{ color: getGenreColor(station.tags) }}>{genre}</span>
+          )}
+          {flag && <span>{flag}</span>}
+          {station.bitrate > 0 && <span>{station.bitrate}k</span>}
+        </div>
+      </div>
+
+      {/* Active indicator */}
+      {isActive && isPlaying && (
+        <div className="flex gap-0.5 items-end h-4">
+          <span className="w-0.5 bg-primary rounded-full animate-pulse" style={{ height: "40%", animationDelay: "0ms" }} />
+          <span className="w-0.5 bg-primary rounded-full animate-pulse" style={{ height: "70%", animationDelay: "150ms" }} />
+          <span className="w-0.5 bg-primary rounded-full animate-pulse" style={{ height: "50%", animationDelay: "300ms" }} />
+        </div>
+      )}
+    </button>
+  );
+}
