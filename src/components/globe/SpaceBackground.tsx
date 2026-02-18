@@ -308,11 +308,12 @@ export function SpaceBackground() {
   const animRef = useRef<number>(0);
   const starsRef = useRef<Star[]>([]);
   const nebulaeRef = useRef<Nebula[]>([]);
-  const shootingStarsRef = useRef<ShootingStar[]>(createShootingStarPool(3));
+  const shootingStarsRef = useRef<ShootingStar[]>(createShootingStarPool(5));
   const wispsRef = useRef<AuroraWisp[]>(createAuroraWisps(5));
   const streaksRef = useRef<EdgeStreak[]>(createStreakPool(6));
   const lastBassRef = useRef(0);
   const lastHighRef = useRef(0);
+  const lastPeriodicSpawnRef = useRef(0);
   const isPlaying = useRadioStore((s) => s.isPlaying);
   const currentStation = useRadioStore((s) => s.currentStation);
   const visualMood = useRadioStore((s) => s.visualMood) as VisualMood;
@@ -369,7 +370,8 @@ export function SpaceBackground() {
 
       // ── Stars ──
       const stars = starsRef.current;
-      for (const s of stars) {
+      for (let si = 0; si < stars.length; si++) {
+        const s = stars[si];
         s.x += s.driftX;
         s.y += s.driftY;
 
@@ -378,38 +380,48 @@ export function SpaceBackground() {
         if (s.y < -5) s.y = h + 5;
         if (s.y > h + 5) s.y = -5;
 
+        // Per-band reactivity: group stars by index
+        const bandGroup = si % 3;
+        const bandBoost =
+          bandGroup === 0
+            ? audio.bass * 0.35
+            : bandGroup === 1
+              ? audio.mid * 0.3
+              : audio.treble * 0.4;
+
         const twinkle =
           0.5 +
           0.5 *
             Math.sin(
-              time * s.twinkleSpeed + s.twinklePhase + audio.high * 3
+              time * s.twinkleSpeed + s.twinklePhase + audio.high * 4 + bandBoost * 2
             );
         const alpha =
           s.baseAlpha *
           twinkle *
           mood.starBrightness *
-          (0.6 + audio.energy * 0.4);
+          (0.5 + audio.energy * 0.5 + bandBoost * 0.3);
 
         if (alpha < 0.02) continue;
 
-        const size = s.size * (1 + audio.treble * 0.3);
+        const size = s.size * (1 + audio.treble * 0.4 + (s.size > 1.5 ? audio.bass * 0.3 : 0));
 
         ctx.beginPath();
         ctx.arc(s.x, s.y, size, 0, Math.PI * 2);
         ctx.fillStyle = `rgba(${s.colorR}, ${s.colorG}, ${s.colorB}, ${Math.min(alpha, 0.9)})`;
         ctx.fill();
 
-        if (size > 1.5 && alpha > 0.4) {
+        if (size > 1.5 && alpha > 0.35) {
+          const glowMult = 3 + audio.mid * 1.5;
           const grad = ctx.createRadialGradient(
-            s.x, s.y, 0, s.x, s.y, size * 3
+            s.x, s.y, 0, s.x, s.y, size * glowMult
           );
           grad.addColorStop(
             0,
-            `rgba(${s.colorR}, ${s.colorG}, ${s.colorB}, ${alpha * 0.3})`
+            `rgba(${s.colorR}, ${s.colorG}, ${s.colorB}, ${alpha * 0.35})`
           );
           grad.addColorStop(1, `rgba(${s.colorR}, ${s.colorG}, ${s.colorB}, 0)`);
           ctx.fillStyle = grad;
-          ctx.fillRect(s.x - size * 3, s.y - size * 3, size * 6, size * 6);
+          ctx.fillRect(s.x - size * glowMult, s.y - size * glowMult, size * glowMult * 2, size * glowMult * 2);
         }
       }
 
@@ -588,8 +600,15 @@ export function SpaceBackground() {
         const bassBump = audio.bass - lastBassRef.current;
         lastBassRef.current = audio.bass;
 
-        if (bassBump > 0.15 && audio.bass > 0.5 && Math.random() > 0.6) {
+        if (bassBump > 0.08 && audio.bass > 0.3 && Math.random() > 0.4) {
           spawnShootingStar(shootingStarsRef.current, w, h);
+        }
+
+        // Periodic spawn every ~8-12 seconds regardless of audio
+        lastPeriodicSpawnRef.current += 0.016;
+        if (lastPeriodicSpawnRef.current > 8 + Math.random() * 4) {
+          spawnShootingStar(shootingStarsRef.current, w, h);
+          lastPeriodicSpawnRef.current = 0;
         }
 
         for (const ss of shootingStarsRef.current) {

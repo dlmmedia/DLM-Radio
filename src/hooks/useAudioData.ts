@@ -11,10 +11,10 @@ const defaultAudioData: AudioData = {
   treble: 0,
   energy: 0,
   raw: new Float32Array(32),
+  waveform: new Float32Array(1024),
 };
 
-// Singleton ref shared across the app
-let globalAudioData: AudioData = { ...defaultAudioData, raw: new Float32Array(32) };
+let globalAudioData: AudioData = { ...defaultAudioData, raw: new Float32Array(32), waveform: new Float32Array(1024) };
 
 export function getAudioData(): AudioData {
   return globalAudioData;

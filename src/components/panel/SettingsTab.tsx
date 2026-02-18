@@ -7,7 +7,9 @@ import { Switch } from "@/components/ui/switch";
 import { useHistory } from "@/hooks/useHistory";
 import { useRadioStore } from "@/stores/radioStore";
 import { Button } from "@/components/ui/button";
-import { Trash2, ExternalLink, Radio } from "lucide-react";
+import { Trash2, Radio, Check } from "lucide-react";
+import { SCENE_META, SCENE_ORDER } from "@/lib/scene-presets";
+import type { SceneId } from "@/components/visualizer/scenes/types";
 
 export function SettingsTab() {
   const { clearHistory } = useHistory();
@@ -15,6 +17,13 @@ export function SettingsTab() {
   const idleTimeout = useRadioStore((s) => s.idleTimeout);
   const setAutoVisualizer = useRadioStore((s) => s.setAutoVisualizer);
   const setIdleTimeout = useRadioStore((s) => s.setIdleTimeout);
+  const visualizerScene = useRadioStore((s) => s.visualizerScene);
+  const setVisualizerScene = useRadioStore((s) => s.setVisualizerScene);
+
+  const sceneOptions: { id: SceneId | "auto"; name: string }[] = [
+    { id: "auto", name: "Auto (match genre)" },
+    ...SCENE_ORDER.map((id) => ({ id, name: SCENE_META[id].name })),
+  ];
 
   return (
     <ScrollArea className="h-full">
@@ -25,13 +34,14 @@ export function SettingsTab() {
             Visualizer
           </h2>
           <div className="space-y-4">
+            {/* Auto-visualizer toggle */}
             <div className="flex items-center justify-between">
               <div>
                 <label className="text-sm font-medium block">
                   Auto Visualizer
                 </label>
                 <span className="text-[11px] text-muted-foreground">
-                  Open after idle while playing
+                  Show when idle while playing
                 </span>
               </div>
               <Switch
@@ -39,24 +49,56 @@ export function SettingsTab() {
                 onCheckedChange={setAutoVisualizer}
               />
             </div>
+
+            {/* Idle timeout */}
             {autoVisualizer && (
               <div>
                 <label className="text-sm font-medium mb-2 block">
-                  Idle Timeout ({idleTimeout}s)
+                  Idle timeout
                 </label>
                 <Slider
                   value={[idleTimeout]}
                   onValueChange={([v]) => setIdleTimeout(v)}
                   min={30}
                   max={300}
-                  step={10}
+                  step={15}
                 />
                 <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
                   <span>30s</span>
-                  <span>5min</span>
+                  <span className="font-medium text-foreground">
+                    {idleTimeout >= 60
+                      ? `${Math.floor(idleTimeout / 60)}m${idleTimeout % 60 > 0 ? ` ${idleTimeout % 60}s` : ""}`
+                      : `${idleTimeout}s`}
+                  </span>
+                  <span>5m</span>
                 </div>
               </div>
             )}
+
+            {/* Default scene */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">
+                Default scene
+              </label>
+              <div className="grid grid-cols-2 gap-1.5">
+                {sceneOptions.map((opt) => (
+                  <button
+                    key={opt.id}
+                    className={`text-xs px-2.5 py-1.5 rounded-md border transition-colors flex items-center gap-1.5 ${
+                      visualizerScene === opt.id
+                        ? "bg-primary/10 border-primary/40 text-primary"
+                        : "border-border hover:bg-muted/50 text-muted-foreground"
+                    }`}
+                    onClick={() => setVisualizerScene(opt.id)}
+                  >
+                    {visualizerScene === opt.id && (
+                      <Check className="h-3 w-3 flex-shrink-0" />
+                    )}
+                    <span className="truncate">{opt.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -91,18 +133,9 @@ export function SettingsTab() {
               <span className="font-medium">DLM Radio</span>
             </div>
             <p className="text-xs text-muted-foreground">
-              An audio-reactive radio globe powered by Radio Browser API with
-              50,000+ stations worldwide.
+              An audio-reactive radio experience with an interactive globe
+              and 50,000+ stations from around the world.
             </p>
-            <a
-              href="https://www.radio-browser.info/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-            >
-              Radio Browser API
-              <ExternalLink className="h-3 w-3" />
-            </a>
           </div>
         </div>
 
@@ -119,8 +152,9 @@ export function SettingsTab() {
             <ShortcutRow keys="M" action="Mute" />
             <ShortcutRow keys="F" action="Fullscreen" />
             <ShortcutRow keys="R" action="Random station" />
-            <ShortcutRow keys="V" action="Visualizer" />
-            <ShortcutRow keys="Esc" action="Close panel" />
+            <ShortcutRow keys="V" action="Toggle visualizer" />
+            <ShortcutRow keys="B" action="Cycle visual mood" />
+            <ShortcutRow keys="Esc" action="Close / Back" />
             <ShortcutRow keys="1-4" action="Switch tab" />
           </div>
         </div>

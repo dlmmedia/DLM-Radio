@@ -8,7 +8,7 @@ import { BrowseTab } from "./BrowseTab";
 import { SearchTab } from "./SearchTab";
 import { SettingsTab } from "./SettingsTab";
 import { motion, AnimatePresence } from "framer-motion";
-import { X } from "lucide-react";
+import { X, Radio } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const tabComponent: Record<string, React.FC> = {
@@ -36,7 +36,21 @@ export function SidePanel() {
         >
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-border/30">
-            <h1 className="text-lg font-semibold tracking-tight">DLM Radio</h1>
+            <motion.div
+              className="flex items-center gap-2 cursor-default select-none"
+              whileHover={{ scale: 1.03 }}
+              transition={{ type: "spring", stiffness: 400, damping: 15 }}
+            >
+              <motion.div
+                animate={{ scale: [1, 1.2, 1], opacity: [0.6, 1, 0.6] }}
+                transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+              >
+                <Radio className="h-5 w-5 text-primary" />
+              </motion.div>
+              <h1 className="text-xl font-bold tracking-tight bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text text-transparent bg-[length:200%_auto] animate-shimmer">
+                DLM Radio
+              </h1>
+            </motion.div>
             <Button
               variant="ghost"
               size="icon"

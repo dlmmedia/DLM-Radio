@@ -13,6 +13,7 @@ export function useAudioEngine() {
   const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
   const animFrameRef = useRef<number>(0);
   const dataArrayRef = useRef<Uint8Array<ArrayBuffer> | null>(null);
+  const timeDomainRef = useRef<Uint8Array<ArrayBuffer> | null>(null);
   const lastStationRef = useRef<string | null>(null);
 
   const {
@@ -79,6 +80,7 @@ export function useAudioEngine() {
       analyserRef.current = analyser;
       sourceRef.current = source;
       dataArrayRef.current = new Uint8Array(analyser.frequencyBinCount) as Uint8Array<ArrayBuffer>;
+      timeDomainRef.current = new Uint8Array(analyser.frequencyBinCount) as Uint8Array<ArrayBuffer>;
     } catch (e) {
       console.warn("Failed to set up audio analyser:", e);
     }
@@ -88,9 +90,13 @@ export function useAudioEngine() {
   const updateAudioData = useCallback(() => {
     if (analyserRef.current && dataArrayRef.current) {
       analyserRef.current.getByteFrequencyData(dataArrayRef.current);
+      if (timeDomainRef.current) {
+        analyserRef.current.getByteTimeDomainData(timeDomainRef.current);
+      }
       const bands = extractBands(
         dataArrayRef.current,
-        analyserRef.current.frequencyBinCount
+        analyserRef.current.frequencyBinCount,
+        timeDomainRef.current ?? undefined
       );
       setGlobalAudioData(bands);
     }

@@ -94,6 +94,7 @@ export interface AudioData {
   treble: number;
   energy: number;
   raw: Float32Array;
+  waveform: Float32Array;
 }
 
 export type PanelTab = "explore" | "favorites" | "browse" | "search" | "settings";

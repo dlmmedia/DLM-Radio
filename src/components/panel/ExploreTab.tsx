@@ -69,11 +69,13 @@ export function ExploreTab() {
     return (
       <ScrollArea className="h-full">
         <div className="p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <TrendingUp className="h-4 w-4 text-primary" />
-            <h2 className="text-sm font-semibold">Trending Now</h2>
+          <div className="flex items-center gap-2.5 mb-1">
+            <div className="flex items-center justify-center h-7 w-7 rounded-lg bg-primary/10">
+              <TrendingUp className="h-4 w-4 text-primary" />
+            </div>
+            <h2 className="text-base font-bold tracking-tight">Trending Now</h2>
           </div>
-          <p className="text-xs text-muted-foreground mb-4">
+          <p className="text-xs text-muted-foreground/70 mb-3 ml-[38px]">
             Click a station on the globe to explore by location
           </p>
           <div className="space-y-0.5">
@@ -91,21 +93,25 @@ export function ExploreTab() {
       <div className="p-4 space-y-5">
         {/* Location Header */}
         <div>
-          <div className="flex items-center gap-2">
-            <MapPin className="h-4 w-4 text-primary" />
-            <h2 className="text-base font-semibold">
-              {exploreCity || exploreCountry}
-            </h2>
+          <div className="flex items-center gap-2.5">
+            <div className="flex items-center justify-center h-7 w-7 rounded-lg bg-primary/10">
+              <MapPin className="h-4 w-4 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-base font-bold tracking-tight">
+                {exploreCity || exploreCountry}
+              </h2>
+              {exploreCity && exploreCountry && (
+                <p className="text-[11px] text-muted-foreground/70">{exploreCountry}</p>
+              )}
+            </div>
           </div>
-          {exploreCity && exploreCountry && (
-            <p className="text-xs text-muted-foreground ml-6">{exploreCountry}</p>
-          )}
         </div>
 
         {/* Stations in area */}
         {localStations.length > 0 && (
           <div>
-            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+            <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest mb-2">
               {exploreCity ? `Stations in ${exploreCity}` : "Stations"}
             </h3>
             <div className="space-y-0.5">
@@ -122,8 +128,8 @@ export function ExploreTab() {
         {popularStations.length > 0 && (
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <Globe className="h-3.5 w-3.5 text-muted-foreground" />
-              <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              <Globe className="h-3.5 w-3.5 text-muted-foreground/60" />
+              <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
                 Popular in {exploreCountry}
               </h3>
             </div>

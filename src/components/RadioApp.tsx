@@ -16,18 +16,11 @@ const SidePanel = dynamic(
   { ssr: false }
 );
 import { Button } from "@/components/ui/button";
-import { Menu } from "lucide-react";
+import { Menu, MonitorPlay } from "lucide-react";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 const RadioGlobe = dynamic(
   () => import("./globe/RadioGlobe").then((m) => ({ default: m.RadioGlobe })),
-  { ssr: false }
-);
-
-const AudioVisualOverlay = dynamic(
-  () =>
-    import("./globe/AudioVisualOverlay").then((m) => ({
-      default: m.AudioVisualOverlay,
-    })),
   { ssr: false }
 );
 
@@ -152,13 +145,17 @@ export function RadioApp() {
             }
           } catch {}
           break;
-        case "Escape":
-          if (useRadioStore.getState().drawerStation) {
+        case "Escape": {
+          const escState = useRadioStore.getState();
+          if (escState.visualizerActive) {
+            escState.setVisualizerActive(false);
+          } else if (escState.drawerStation) {
             setDrawerStation(null);
           } else if (panelOpen) {
             togglePanel();
           }
           break;
+        }
         case "1":
           setPanelTab("explore");
           break;
@@ -172,8 +169,14 @@ export function RadioApp() {
           setPanelTab("search");
           break;
         case "v":
-        case "V":
-          setVisualizerActive(!useRadioStore.getState().visualizerActive);
+        case "V": {
+          const state = useRadioStore.getState();
+          state.setVisualizerActive(!state.visualizerActive);
+          break;
+        }
+        case "b":
+        case "B":
+          cycleVisualMood();
           break;
       }
     },
@@ -191,6 +194,7 @@ export function RadioApp() {
       setStation,
       setStationList,
       setVisualizerActive,
+      cycleVisualMood,
     ]
   );
 
@@ -200,17 +204,14 @@ export function RadioApp() {
   }, [handleKeyDown]);
 
   return (
-    <div className="relative h-screen w-screen overflow-hidden bg-black">
+    <div className="relative isolate h-screen w-screen overflow-hidden bg-black">
       {/* Music-reactive space background (behind the globe) */}
       <SpaceBackground />
 
-      {/* Globe with transparent background */}
-      <div className="absolute inset-0 z-[1]">
+      {/* Globe with transparent background — bottom-16 accounts for PlayerBar */}
+      <div className="absolute inset-0 bottom-16 z-[1]">
         <RadioGlobe />
       </div>
-
-      {/* Audio visualizer overlay (above the globe) */}
-      <AudioVisualOverlay />
 
       {/* Panel toggle */}
       {!panelOpen && (
@@ -227,6 +228,27 @@ export function RadioApp() {
       {/* Visual mood toggle */}
       <MoodToggle />
 
+      {/* Visualizer toggle */}
+      {isPlaying && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="fixed bottom-20 right-3 z-40 h-9 w-9 rounded-full bg-background/60 backdrop-blur-sm"
+              onClick={() =>
+                useRadioStore.getState().setVisualizerActive(
+                  !useRadioStore.getState().visualizerActive
+                )
+              }
+            >
+              <MonitorPlay className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="left">Visualizer (V)</TooltipContent>
+        </Tooltip>
+      )}
+
       {/* Side Panel */}
       <SidePanel />
 
@@ -236,7 +258,7 @@ export function RadioApp() {
       {/* Player Bar */}
       <PlayerBar />
 
-      {/* Fullscreen Visualizer Overlay */}
+      {/* Fullscreen Visualizer */}
       <VisualizerOverlay />
     </div>
   );

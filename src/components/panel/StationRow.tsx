@@ -33,7 +33,7 @@ export function StationRow({ station, showCountry = false, onClick }: StationRow
   return (
     <button
       onClick={handleClick}
-      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors hover:bg-accent/50 group ${
+      className={`w-full flex items-start gap-3 px-3 py-2.5 rounded-lg text-left transition-colors hover:bg-accent/50 group ${
         isActive ? "bg-accent/60" : ""
       }`}
     >
@@ -68,15 +68,25 @@ export function StationRow({ station, showCountry = false, onClick }: StationRow
 
       {/* Station info */}
       <div className="min-w-0 flex-1">
-        <div className="text-sm font-medium truncate">
+        <div className="text-sm font-medium line-clamp-2 leading-snug" title={station.name}>
           {station.name}
         </div>
-        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+        <div className="flex items-center gap-1 text-xs text-muted-foreground/80 mt-0.5">
           {genre && (
-            <span style={{ color: getGenreColor(station.tags) }}>{genre}</span>
+            <span className="font-medium" style={{ color: getGenreColor(station.tags) }}>{genre}</span>
           )}
-          {flag && <span>{flag}</span>}
-          {station.bitrate > 0 && <span>{station.bitrate}k</span>}
+          {flag && (
+            <>
+              <span className="text-muted-foreground/40">·</span>
+              <span>{flag}</span>
+            </>
+          )}
+          {station.bitrate > 0 && (
+            <>
+              <span className="text-muted-foreground/40">·</span>
+              <span className="rounded-full bg-muted/60 px-1.5 py-px text-[10px] font-medium">{station.bitrate}k</span>
+            </>
+          )}
         </div>
       </div>
 

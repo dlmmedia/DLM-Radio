@@ -1,6 +1,6 @@
 import type { AudioData } from "./types";
 
-export function extractBands(dataArray: Uint8Array, bufferLength: number): AudioData {
+export function extractBands(dataArray: Uint8Array, bufferLength: number, timeDomainArray?: Uint8Array): AudioData {
   const raw = new Float32Array(32);
   const step = Math.floor(bufferLength / 32);
   for (let i = 0; i < 32; i++) {
@@ -30,7 +30,14 @@ export function extractBands(dataArray: Uint8Array, bufferLength: number): Audio
   }
   const energy = Math.sqrt(rmsSum / bufferLength);
 
-  return { sub, bass, mid, high, treble, energy, raw };
+  const waveform = new Float32Array(bufferLength);
+  if (timeDomainArray) {
+    for (let i = 0; i < bufferLength; i++) {
+      waveform[i] = (timeDomainArray[i] - 128) / 128;
+    }
+  }
+
+  return { sub, bass, mid, high, treble, energy, raw, waveform };
 }
 
 function average(arr: Uint8Array, start: number, end: number): number {
