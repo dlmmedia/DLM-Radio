@@ -3,6 +3,7 @@
 import { create } from "zustand";
 import type { Station, PanelTab } from "@/lib/types";
 import { MOOD_ORDER, type VisualMood } from "@/lib/visual-moods";
+import type { SceneId } from "@/components/visualizer/scenes/types";
 
 interface RadioState {
   // Playback
@@ -25,6 +26,12 @@ interface RadioState {
   // Visual
   visualMood: VisualMood;
 
+  // Visualizer
+  visualizerActive: boolean;
+  visualizerScene: SceneId | "auto";
+  autoVisualizer: boolean;
+  idleTimeout: number;
+
   // Explore context
   exploreCity: string | null;
   exploreCountry: string | null;
@@ -46,6 +53,10 @@ interface RadioState {
   setExploreLocation: (city: string | null, country: string | null, countryCode: string | null) => void;
   setVisualMood: (mood: VisualMood) => void;
   cycleVisualMood: () => void;
+  setVisualizerActive: (active: boolean) => void;
+  setVisualizerScene: (scene: SceneId | "auto") => void;
+  setAutoVisualizer: (auto: boolean) => void;
+  setIdleTimeout: (seconds: number) => void;
 }
 
 export const useRadioStore = create<RadioState>((set, get) => ({
@@ -61,6 +72,10 @@ export const useRadioStore = create<RadioState>((set, get) => ({
   drawerStation: null,
   searchQuery: "",
   visualMood: "cosmic" as VisualMood,
+  visualizerActive: false,
+  visualizerScene: "auto" as SceneId | "auto",
+  autoVisualizer: true,
+  idleTimeout: 120,
   exploreCity: null,
   exploreCountry: null,
   exploreCountryCode: null,
@@ -126,4 +141,9 @@ export const useRadioStore = create<RadioState>((set, get) => ({
     const next = MOOD_ORDER[(idx + 1) % MOOD_ORDER.length];
     set({ visualMood: next });
   },
+
+  setVisualizerActive: (active) => set({ visualizerActive: active }),
+  setVisualizerScene: (scene) => set({ visualizerScene: scene }),
+  setAutoVisualizer: (auto) => set({ autoVisualizer: auto }),
+  setIdleTimeout: (seconds) => set({ idleTimeout: Math.max(30, seconds) }),
 }));

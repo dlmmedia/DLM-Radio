@@ -3,14 +3,18 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
-import { useState } from "react";
+import { Switch } from "@/components/ui/switch";
 import { useHistory } from "@/hooks/useHistory";
+import { useRadioStore } from "@/stores/radioStore";
 import { Button } from "@/components/ui/button";
 import { Trash2, ExternalLink, Radio } from "lucide-react";
 
 export function SettingsTab() {
-  const [visualizerIntensity, setVisualizerIntensity] = useState(70);
   const { clearHistory } = useHistory();
+  const autoVisualizer = useRadioStore((s) => s.autoVisualizer);
+  const idleTimeout = useRadioStore((s) => s.idleTimeout);
+  const setAutoVisualizer = useRadioStore((s) => s.setAutoVisualizer);
+  const setIdleTimeout = useRadioStore((s) => s.setIdleTimeout);
 
   return (
     <ScrollArea className="h-full">
@@ -20,22 +24,39 @@ export function SettingsTab() {
           <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
             Visualizer
           </h2>
-          <div className="space-y-3">
-            <div>
-              <label className="text-sm font-medium mb-2 block">
-                Intensity
-              </label>
-              <Slider
-                value={[visualizerIntensity]}
-                onValueChange={([v]) => setVisualizerIntensity(v)}
-                max={100}
-                step={1}
-              />
-              <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
-                <span>Subtle</span>
-                <span>Intense</span>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="text-sm font-medium block">
+                  Auto Visualizer
+                </label>
+                <span className="text-[11px] text-muted-foreground">
+                  Open after idle while playing
+                </span>
               </div>
+              <Switch
+                checked={autoVisualizer}
+                onCheckedChange={setAutoVisualizer}
+              />
             </div>
+            {autoVisualizer && (
+              <div>
+                <label className="text-sm font-medium mb-2 block">
+                  Idle Timeout ({idleTimeout}s)
+                </label>
+                <Slider
+                  value={[idleTimeout]}
+                  onValueChange={([v]) => setIdleTimeout(v)}
+                  min={30}
+                  max={300}
+                  step={10}
+                />
+                <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
+                  <span>30s</span>
+                  <span>5min</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -98,6 +119,7 @@ export function SettingsTab() {
             <ShortcutRow keys="M" action="Mute" />
             <ShortcutRow keys="F" action="Fullscreen" />
             <ShortcutRow keys="R" action="Random station" />
+            <ShortcutRow keys="V" action="Visualizer" />
             <ShortcutRow keys="Esc" action="Close panel" />
             <ShortcutRow keys="1-4" action="Switch tab" />
           </div>

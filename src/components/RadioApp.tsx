@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { useAudioEngine } from "@/hooks/useAudioEngine";
 import { useRadioStore } from "@/stores/radioStore";
 import { useHistory } from "@/hooks/useHistory";
+import { useIdleDetector } from "@/hooks/useIdleDetector";
 import { recordListening } from "@/lib/recommendations";
 import { searchStations } from "@/lib/radio-browser";
 import { PlayerBar } from "./player/PlayerBar";
@@ -46,8 +47,17 @@ const MoodToggle = dynamic(
   { ssr: false }
 );
 
+const VisualizerOverlay = dynamic(
+  () =>
+    import("./visualizer/VisualizerOverlay").then((m) => ({
+      default: m.VisualizerOverlay,
+    })),
+  { ssr: false }
+);
+
 export function RadioApp() {
   useAudioEngine();
+  useIdleDetector();
   const { addToHistory } = useHistory();
   const {
     currentStation,
@@ -64,6 +74,8 @@ export function RadioApp() {
     setStation,
     setStationList,
     cycleVisualMood,
+    visualizerActive,
+    setVisualizerActive,
   } = useRadioStore();
 
   // Auto-rotate visual mood every 4 minutes while playing
@@ -161,7 +173,7 @@ export function RadioApp() {
           break;
         case "v":
         case "V":
-          cycleVisualMood();
+          setVisualizerActive(!useRadioStore.getState().visualizerActive);
           break;
       }
     },
@@ -178,7 +190,7 @@ export function RadioApp() {
       setDrawerStation,
       setStation,
       setStationList,
-      cycleVisualMood,
+      setVisualizerActive,
     ]
   );
 
@@ -223,6 +235,9 @@ export function RadioApp() {
 
       {/* Player Bar */}
       <PlayerBar />
+
+      {/* Fullscreen Visualizer Overlay */}
+      <VisualizerOverlay />
     </div>
   );
 }

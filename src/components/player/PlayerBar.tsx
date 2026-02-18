@@ -17,6 +17,7 @@ import {
   Heart,
   Loader2,
   Radio,
+  AudioLines,
 } from "lucide-react";
 
 export function PlayerBar() {
@@ -156,6 +157,25 @@ export function PlayerBar() {
             className="w-20"
           />
         </div>
+
+        {/* Visualizer */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() =>
+                useRadioStore.getState().setVisualizerActive(
+                  !useRadioStore.getState().visualizerActive
+                )
+              }
+            >
+              <AudioLines className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Visualizer (V)</TooltipContent>
+        </Tooltip>
 
         {/* Favorite */}
         <Tooltip>
