@@ -1,5 +1,6 @@
 "use client";
 
+import { useTheme } from "next-themes";
 import { useRadioStore } from "@/stores/radioStore";
 import { MOOD_CONFIGS, MOOD_ORDER, type VisualMood } from "@/lib/visual-moods";
 import { Sparkles } from "lucide-react";
@@ -9,10 +10,11 @@ export function MoodToggle() {
   const visualMood = useRadioStore((s) => s.visualMood) as VisualMood;
   const cycleVisualMood = useRadioStore((s) => s.cycleVisualMood);
   const isPlaying = useRadioStore((s) => s.isPlaying);
+  const { resolvedTheme } = useTheme();
 
   const config = MOOD_CONFIGS[visualMood];
 
-  if (!isPlaying) return null;
+  if (!isPlaying || resolvedTheme !== "dark") return null;
 
   return (
     <Button

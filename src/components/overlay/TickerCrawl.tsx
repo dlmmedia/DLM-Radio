@@ -42,7 +42,7 @@ export function TickerCrawl({ messages, visible, onComplete }: TickerCrawlProps)
           initial={{ opacity: 0 }}
           animate={{ opacity: 1, transition: { duration: 0.6 } }}
           exit={{ opacity: 0, transition: { duration: 0.5 } }}
-          className="pointer-events-none fixed bottom-16 left-0 right-0 z-[32] h-7 overflow-hidden bg-black/25 backdrop-blur-md"
+          className="pointer-events-none fixed bottom-16 left-0 right-0 z-[32] h-7 overflow-hidden bg-white/60 dark:bg-black/25 backdrop-blur-md border-y border-black/[0.06] dark:border-white/[0.04]"
         >
           <motion.div
             ref={innerRef}
@@ -56,16 +56,16 @@ export function TickerCrawl({ messages, visible, onComplete }: TickerCrawlProps)
                 <span
                   className={`text-[11px] tracking-wide ${
                     msg.type === "promo"
-                      ? "font-medium text-white/50"
+                      ? "font-medium text-black/70 dark:text-white/50"
                       : msg.type === "fact"
-                        ? "font-light text-white/40 italic"
-                        : "font-light text-white/40"
+                        ? "font-normal text-black/60 dark:text-white/40 italic"
+                        : "font-normal text-black/60 dark:text-white/40"
                   }`}
                 >
                   {msg.text}
                 </span>
                 {i < messages.length - 1 && (
-                  <span className="mx-4 text-[8px] text-white/20">{"\u2022"}</span>
+                  <span className="mx-4 text-[8px] text-black/30 dark:text-white/20">{"\u2022"}</span>
                 )}
               </span>
             ))}

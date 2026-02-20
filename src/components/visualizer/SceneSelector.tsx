@@ -32,7 +32,7 @@ export function SceneSelector() {
 
   return (
     <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-10">
-      <div className="flex items-center gap-1 bg-black/40 backdrop-blur-xl border border-white/10 rounded-full px-2 py-1.5">
+      <div className="flex items-center gap-1 bg-white/70 dark:bg-black/40 backdrop-blur-xl border border-black/[0.12] dark:border-white/10 rounded-full px-2 py-1.5">
         {/* Auto button */}
         <Tooltip>
           <TooltipTrigger asChild>
@@ -41,8 +41,8 @@ export function SceneSelector() {
               size="icon"
               className={`h-8 w-8 rounded-full transition-colors ${
                 visualizerScene === "auto"
-                  ? "bg-white/20 text-white"
-                  : "text-white/50 hover:text-white hover:bg-white/10"
+                  ? "bg-black/20 dark:bg-white/20 text-black dark:text-white"
+                  : "text-black/60 dark:text-white/50 hover:text-black dark:hover:text-white hover:bg-black/10 dark:hover:bg-white/10"
               }`}
               onClick={() => setVisualizerScene("auto")}
             >
@@ -54,7 +54,7 @@ export function SceneSelector() {
           </TooltipContent>
         </Tooltip>
 
-        <div className="w-px h-5 bg-white/10 mx-0.5" />
+        <div className="w-px h-5 bg-black/15 dark:bg-white/10 mx-0.5" />
 
         {SCENE_ORDER.map((id) => {
           const meta = SCENE_META[id];
@@ -71,8 +71,8 @@ export function SceneSelector() {
                   size="icon"
                   className={`h-8 w-8 rounded-full transition-colors ${
                     isActive
-                      ? "bg-white/15 text-white"
-                      : "text-white/40 hover:text-white hover:bg-white/10"
+                      ? "bg-black/15 dark:bg-white/15 text-black dark:text-white"
+                      : "text-black/55 dark:text-white/40 hover:text-black dark:hover:text-white hover:bg-black/10 dark:hover:bg-white/10"
                   }`}
                   onClick={() => setVisualizerScene(id)}
                 >

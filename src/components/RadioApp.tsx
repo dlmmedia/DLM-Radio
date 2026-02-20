@@ -2,6 +2,7 @@
 
 import { useEffect, useCallback } from "react";
 import dynamic from "next/dynamic";
+import { useTheme } from "next-themes";
 import { useAudioEngine } from "@/hooks/useAudioEngine";
 import { useRadioStore } from "@/stores/radioStore";
 import { useHistory } from "@/hooks/useHistory";
@@ -28,6 +29,14 @@ const SpaceBackground = dynamic(
   () =>
     import("./globe/SpaceBackground").then((m) => ({
       default: m.SpaceBackground,
+    })),
+  { ssr: false }
+);
+
+const SkyBackground = dynamic(
+  () =>
+    import("./globe/SkyBackground").then((m) => ({
+      default: m.SkyBackground,
     })),
   { ssr: false }
 );
@@ -219,10 +228,13 @@ export function RadioApp() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
 
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
+
   return (
-    <div className="relative isolate h-screen w-screen overflow-hidden bg-black">
-      {/* Music-reactive space background (behind the globe) */}
-      <SpaceBackground />
+    <div className="relative isolate h-screen w-screen overflow-hidden bg-[#F0F7FA] dark:bg-black">
+      {/* Music-reactive background (behind the globe) */}
+      {isDark ? <SpaceBackground /> : <SkyBackground />}
 
       {/* Globe with transparent background — bottom-16 accounts for PlayerBar */}
       <div className="absolute inset-0 bottom-16 z-[1]">

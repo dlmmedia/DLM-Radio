@@ -40,7 +40,7 @@ export function StationInfoCard() {
       }`}
     >
       <div
-        className={`flex items-center gap-3 bg-black/50 backdrop-blur-xl border border-white/10 rounded-2xl transition-all duration-500 ${
+        className={`flex items-center gap-3 bg-white/70 dark:bg-black/50 backdrop-blur-xl border border-black/[0.12] dark:border-white/10 rounded-2xl transition-all duration-500 ${
           minimal ? "px-4 py-2" : "px-5 py-3"
         }`}
       >
@@ -68,15 +68,15 @@ export function StationInfoCard() {
         )}
 
         <div className={`min-w-0 ${minimal ? "" : "max-w-[280px]"}`}>
-          <div className="text-sm font-medium text-white truncate">
+          <div className="text-sm font-medium text-black dark:text-white truncate">
             {currentStation.name}
           </div>
           {!minimal && (
-            <div className="flex items-center gap-2 mt-0.5 text-xs text-white/60">
+            <div className="flex items-center gap-2 mt-0.5 text-xs text-black/70 dark:text-white/60">
               {genre && (
                 <Badge
                   variant="outline"
-                  className="text-[10px] px-1.5 py-0 h-4 border-white/20"
+                  className="text-[10px] px-1.5 py-0 h-4 border-black/20 dark:border-white/20"
                   style={{ color: genreColor }}
                 >
                   {genre}

@@ -55,7 +55,7 @@ export function VisualizerOverlay() {
 
   return (
     <div
-      className={`fixed inset-0 z-[60] bg-black transition-opacity duration-500 ${
+      className={`fixed inset-0 z-[60] bg-white dark:bg-black transition-opacity duration-500 ${
         visible ? "opacity-100" : "opacity-0"
       }`}
     >
@@ -89,7 +89,7 @@ export function VisualizerOverlay() {
         <Button
           variant="ghost"
           size="icon"
-          className="absolute top-4 right-4 z-20 h-9 w-9 rounded-full bg-black/40 backdrop-blur-xl border border-white/10 text-white/70 hover:text-white hover:bg-black/60"
+          className="absolute top-4 right-4 z-20 h-9 w-9 rounded-full bg-white/50 dark:bg-black/40 backdrop-blur-xl border border-black/10 dark:border-white/10 text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white hover:bg-white/70 dark:hover:bg-black/60"
           onClick={() => setVisualizerActive(false)}
         >
           <X className="h-4 w-4" />

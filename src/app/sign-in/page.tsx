@@ -12,12 +12,12 @@ export default async function SignInPage() {
   if (session?.user) redirect("/");
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-black">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-b from-sky-50 to-white dark:bg-black dark:from-black dark:to-black">
       {/* Animated gradient background */}
-      <div className="absolute inset-0 opacity-40">
-        <div className="absolute inset-0 bg-gradient-to-br from-violet-950 via-black to-blue-950" />
-        <div className="absolute top-1/4 -left-1/4 h-[500px] w-[500px] rounded-full bg-violet-600/20 blur-[120px] animate-pulse" />
-        <div className="absolute -right-1/4 bottom-1/4 h-[400px] w-[400px] rounded-full bg-blue-600/20 blur-[120px] animate-pulse [animation-delay:1s]" />
+      <div className="absolute inset-0 opacity-30 dark:opacity-40">
+        <div className="absolute inset-0 bg-gradient-to-br from-violet-200 via-white to-blue-200 dark:from-violet-950 dark:via-black dark:to-blue-950" />
+        <div className="absolute top-1/4 -left-1/4 h-[500px] w-[500px] rounded-full bg-violet-400/20 dark:bg-violet-600/20 blur-[120px] animate-pulse" />
+        <div className="absolute -right-1/4 bottom-1/4 h-[400px] w-[400px] rounded-full bg-blue-400/20 dark:bg-blue-600/20 blur-[120px] animate-pulse [animation-delay:1s]" />
       </div>
 
       <SignInForm />

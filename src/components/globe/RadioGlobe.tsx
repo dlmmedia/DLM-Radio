@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
+import { useTheme } from "next-themes";
 import {
   Map,
   useMap,
@@ -15,6 +16,40 @@ import { getGenreColor } from "@/lib/constants";
 import type { Station } from "@/lib/types";
 import { AudioReactiveLayer } from "./AudioReactiveLayer";
 import { getAudioData } from "@/hooks/useAudioData";
+
+/**
+ * Check if a CSS color string is grayish (low saturation).
+ */
+function isGrayish(color: string): boolean {
+  const m = color.match(/^#([0-9a-f]{6})$/i);
+  if (!m) return false;
+  const r = parseInt(m[1].slice(0, 2), 16);
+  const g = parseInt(m[1].slice(2, 4), 16);
+  const b = parseInt(m[1].slice(4, 6), 16);
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const sat = max === 0 ? 0 : (max - min) / max;
+  return sat < 0.15;
+}
+
+/**
+ * Shift a gray hex color toward a warm cream tone.
+ */
+function warmTint(hex: string): string {
+  const m = hex.match(/^#([0-9a-f]{6})$/i);
+  if (!m) return hex;
+  let r = parseInt(m[1].slice(0, 2), 16);
+  let g = parseInt(m[1].slice(2, 4), 16);
+  let b = parseInt(m[1].slice(4, 6), 16);
+  const lum = (r + g + b) / 3;
+  const warmR = lum + 8;
+  const warmG = lum + 4;
+  const warmB = lum - 6;
+  r = Math.min(255, Math.max(0, Math.round(r * 0.4 + warmR * 0.6)));
+  g = Math.min(255, Math.max(0, Math.round(g * 0.4 + warmG * 0.6)));
+  b = Math.min(255, Math.max(0, Math.round(b * 0.4 + warmB * 0.6)));
+  return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
+}
 
 /**
  * Convert a hex color string to an HSL hue value (0-1 range).
@@ -93,6 +128,8 @@ function ReactiveMarker({ station }: { station: Station }) {
 
 function GlobeContent() {
   const { map, isLoaded } = useMap();
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
   const [geoJSON, setGeoJSON] = useState<GeoJSON.FeatureCollection<GeoJSON.Point> | null>(null);
   const {
     currentStation,
@@ -121,43 +158,100 @@ function GlobeContent() {
     loadStations();
   }, []);
 
-  // Make the map background transparent so SpaceBackground shows through
+  // Make the map background transparent + refine light-mode Positron colors
   useEffect(() => {
     if (!isLoaded || !map) return;
 
-    const makeTransparent = () => {
+    const tweakStyle = () => {
       try {
         const style = map.getStyle();
-        if (style?.layers) {
-          for (const layer of style.layers) {
-            if (
-              layer.type === "background" ||
-              layer.id === "background" ||
-              layer.id.startsWith("background")
-            ) {
-              map.setPaintProperty(layer.id, "background-color", "rgba(0,0,0,0)");
-              map.setPaintProperty(layer.id, "background-opacity", 0);
+        if (!style?.layers) return;
+
+        for (const layer of style.layers) {
+          // Transparent background so Sky/Space shows through
+          if (
+            layer.type === "background" ||
+            layer.id === "background" ||
+            layer.id.startsWith("background")
+          ) {
+            map.setPaintProperty(layer.id, "background-color", "rgba(0,0,0,0)");
+            map.setPaintProperty(layer.id, "background-opacity", 0);
+            continue;
+          }
+
+          if (!isDark) {
+            // Warm up water in light mode
+            if (layer.id === "water" && layer.type === "fill") {
+              map.setPaintProperty(layer.id, "fill-color", "#B8D8E8");
+              continue;
+            }
+
+            // Warm up land-related fills (grays → warm cream/beige)
+            if (layer.type === "fill") {
+              const id = layer.id;
+              if (id.startsWith("landcover")) {
+                try {
+                  const c = map.getPaintProperty(id, "fill-color");
+                  if (typeof c === "string" && isGrayish(c)) {
+                    map.setPaintProperty(id, "fill-color", warmTint(c));
+                  }
+                } catch {}
+              } else if (id.startsWith("landuse")) {
+                try {
+                  const c = map.getPaintProperty(id, "fill-color");
+                  if (typeof c === "string" && isGrayish(c)) {
+                    map.setPaintProperty(id, "fill-color", warmTint(c));
+                  }
+                } catch {}
+              } else if (id === "park" || id.startsWith("park")) {
+                try {
+                  map.setPaintProperty(id, "fill-color", "#D8EDD0");
+                } catch {}
+              }
+            }
+
+            // Soften road colors
+            if (layer.type === "line" && layer.id.startsWith("road")) {
+              try {
+                const c = map.getPaintProperty(layer.id, "line-color");
+                if (typeof c === "string" && isGrayish(c)) {
+                  map.setPaintProperty(layer.id, "line-color", warmTint(c));
+                }
+              } catch {}
+            }
+
+            // Soften boundary lines
+            if (layer.type === "line" && layer.id.startsWith("boundary")) {
+              try {
+                map.setPaintProperty(layer.id, "line-color", "rgba(120, 110, 100, 0.25)");
+              } catch {}
+            }
+
+            // Warm up building fills
+            if (layer.type === "fill" && layer.id.startsWith("building")) {
+              try {
+                map.setPaintProperty(layer.id, "fill-color", "#E8E2DA");
+              } catch {}
             }
           }
         }
       } catch {
-        // Style may not have a background layer
+        // Style may not be ready
       }
 
-      // Also ensure the map canvas itself is transparent
       const canvas = map.getCanvas();
       if (canvas) {
         canvas.style.background = "transparent";
       }
     };
 
-    makeTransparent();
-    map.on("styledata", makeTransparent);
+    tweakStyle();
+    map.on("styledata", tweakStyle);
 
     return () => {
-      map.off("styledata", makeTransparent);
+      map.off("styledata", tweakStyle);
     };
-  }, [isLoaded, map]);
+  }, [isLoaded, map, isDark]);
 
   // Add Three.js audio-reactive layer
   useEffect(() => {
@@ -181,6 +275,13 @@ function GlobeContent() {
       audioLayerRef.current = null;
     };
   }, [isLoaded, map]);
+
+  // Sync theme to audio-reactive layer
+  useEffect(() => {
+    if (audioLayerRef.current) {
+      audioLayerRef.current.setDarkMode(isDark);
+    }
+  }, [isDark]);
 
   // When currentStation changes, update audio layer position + genre hue
   useEffect(() => {
@@ -300,7 +401,6 @@ export function RadioGlobe() {
   return (
     <Map
       className="h-full w-full"
-      theme="dark"
       projection={{ type: "globe" }}
       center={[0, 20]}
       zoom={2}

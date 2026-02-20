@@ -29,6 +29,9 @@ export class AudioReactiveLayer {
   /** Genre-based hue in the 0-1 range */
   private genreHue = 0.6;
 
+  /** Whether we're in dark mode (affects blending and brightness) */
+  private isDarkMode = true;
+
   setStationPosition(lng: number, lat: number) {
     this.stationLng = lng;
     this.stationLat = lat;
@@ -37,6 +40,18 @@ export class AudioReactiveLayer {
 
   setGenreHue(hue: number) {
     this.genreHue = hue;
+  }
+
+  setDarkMode(isDark: boolean) {
+    this.isDarkMode = isDark;
+    if (this.glowMesh) {
+      const mat = this.glowMesh.material as THREE.MeshBasicMaterial;
+      mat.blending = isDark ? THREE.AdditiveBlending : THREE.NormalBlending;
+    }
+    if (this.glowHaloMesh) {
+      const mat = this.glowHaloMesh.material as THREE.MeshBasicMaterial;
+      mat.blending = isDark ? THREE.AdditiveBlending : THREE.NormalBlending;
+    }
   }
 
   onAdd(map: maplibregl.Map, gl: WebGLRenderingContext) {

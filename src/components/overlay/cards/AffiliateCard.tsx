@@ -33,9 +33,9 @@ export function AffiliateCard({ item, onDismiss }: AffiliateCardProps) {
         target="_blank"
         rel="noopener noreferrer"
         onClick={(e) => e.stopPropagation()}
-        className="flex items-center gap-3 rounded-xl bg-black/45 backdrop-blur-2xl border border-white/[0.06] px-3.5 py-3 shadow-2xl shadow-black/40 transition-all duration-300 hover:bg-black/55 hover:border-white/[0.1] w-[280px]"
+        className="flex items-center gap-3 rounded-xl bg-white/70 dark:bg-black/45 backdrop-blur-2xl border border-black/[0.1] dark:border-white/[0.06] px-3.5 py-3 shadow-2xl shadow-black/10 dark:shadow-black/40 transition-all duration-300 hover:bg-white/80 dark:hover:bg-black/55 hover:border-black/[0.15] dark:hover:border-white/[0.1] w-[280px]"
         style={{
-          boxShadow: `0 0 24px ${item.accent}08, 0 8px 32px rgba(0,0,0,0.3)`,
+          boxShadow: `0 0 24px ${item.accent}08, 0 8px 32px rgba(0,0,0,0.1)`,
         }}
       >
         {/* Icon */}
@@ -56,10 +56,10 @@ export function AffiliateCard({ item, onDismiss }: AffiliateCardProps) {
               {categoryLabels[item.category]}
             </span>
           </div>
-          <p className="text-[12px] font-normal text-white/80 mt-0.5 truncate">
+          <p className="text-[12px] font-medium text-black/90 dark:text-white/80 mt-0.5 truncate">
             {item.brand}
           </p>
-          <p className="text-[11px] font-light text-white/45 leading-snug mt-0.5">
+          <p className="text-[11px] font-normal text-black/60 dark:text-white/45 leading-snug mt-0.5">
             {item.tagline}
           </p>
         </div>
@@ -79,10 +79,10 @@ export function AffiliateCard({ item, onDismiss }: AffiliateCardProps) {
 
       <button
         onClick={onDismiss}
-        className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-black/60 backdrop-blur-sm border border-white/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+        className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-white/80 dark:bg-black/60 backdrop-blur-sm border border-black/15 dark:border-white/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"
         aria-label="Dismiss"
       >
-        <svg width="8" height="8" viewBox="0 0 8 8" fill="none" className="text-white/60">
+        <svg width="8" height="8" viewBox="0 0 8 8" fill="none" className="text-black/70 dark:text-white/60">
           <path d="M1 1L7 7M7 1L1 7" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
         </svg>
       </button>

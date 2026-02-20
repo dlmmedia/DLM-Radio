@@ -1,6 +1,7 @@
 "use client";
 
 import { useSession } from "next-auth/react";
+import { useTheme } from "next-themes";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
@@ -8,7 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { useHistory } from "@/hooks/useHistory";
 import { useRadioStore } from "@/stores/radioStore";
 import { Button } from "@/components/ui/button";
-import { Trash2, Radio, Check, Cloud } from "lucide-react";
+import { Trash2, Radio, Check, Cloud, Sun, Moon, Monitor } from "lucide-react";
 import { SCENE_META, SCENE_ORDER } from "@/lib/scene-presets";
 import type { SceneId } from "@/components/visualizer/scenes/types";
 
@@ -16,6 +17,7 @@ export function SettingsTab() {
   const { status } = useSession();
   const isAuth = status === "authenticated";
   const { clearHistory, isCloudSynced } = useHistory();
+  const { theme, setTheme } = useTheme();
   const autoVisualizer = useRadioStore((s) => s.autoVisualizer);
   const idleTimeout = useRadioStore((s) => s.idleTimeout);
   const setAutoVisualizer = useRadioStore((s) => s.setAutoVisualizer);
@@ -28,6 +30,12 @@ export function SettingsTab() {
     ...SCENE_ORDER.map((id) => ({ id, name: SCENE_META[id].name })),
   ];
 
+  const themeOptions: { id: string; name: string; icon: React.ComponentType<{ className?: string }> }[] = [
+    { id: "light", name: "Light", icon: Sun },
+    { id: "dark", name: "Dark", icon: Moon },
+    { id: "system", name: "System", icon: Monitor },
+  ];
+
   return (
     <ScrollArea className="h-full">
       <div className="p-4 space-y-5">
@@ -38,6 +46,34 @@ export function SettingsTab() {
             <span>Settings synced to your account</span>
           </div>
         )}
+
+        {/* Appearance */}
+        <div>
+          <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
+            Appearance
+          </h2>
+          <div className="grid grid-cols-3 gap-1.5">
+            {themeOptions.map((opt) => {
+              const Icon = opt.icon;
+              return (
+                <button
+                  key={opt.id}
+                  className={`text-xs px-2.5 py-2 rounded-md border transition-colors flex items-center justify-center gap-1.5 ${
+                    theme === opt.id
+                      ? "bg-primary/10 border-primary/40 text-primary"
+                      : "border-border hover:bg-muted/50 text-muted-foreground"
+                  }`}
+                  onClick={() => setTheme(opt.id)}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  <span>{opt.name}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <Separator />
 
         {/* Visualizer */}
         <div>

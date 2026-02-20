@@ -64,7 +64,7 @@ export function StationRow({ station, showCountry = false, onClick }: StationRow
           <Radio className="h-3.5 w-3.5" style={{ color: getGenreColor(station.tags) }} />
         </div>
         {/* Play overlay on hover */}
-        <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="absolute inset-0 flex items-center justify-center bg-black/50 dark:bg-black/60 rounded opacity-0 group-hover:opacity-100 transition-opacity">
           {isActive && isPlaying ? (
             <Pause className="h-3.5 w-3.5 text-white" />
           ) : (
