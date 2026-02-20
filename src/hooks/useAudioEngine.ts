@@ -23,6 +23,8 @@ export function useAudioEngine() {
     isMuted,
     setPlaying,
     setLoading,
+    nextStation,
+    prevStation,
   } = useRadioStore();
 
   // Initialize audio element and AudioContext once
@@ -191,6 +193,50 @@ export function useAudioEngine() {
       cancelAnimationFrame(animFrameRef.current);
     }
   }, [isPlaying, setPlaying, updateAudioData, ensureAnalyser]);
+
+  // MediaSession API for lock screen / notification controls
+  useEffect(() => {
+    if (!("mediaSession" in navigator)) return;
+
+    if (currentStation) {
+      const genre = currentStation.tags?.split(",")[0]?.trim() || "Radio";
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: currentStation.name,
+        artist: genre,
+        album: "DLM Radio",
+        artwork: currentStation.favicon
+          ? [
+              { src: currentStation.favicon, sizes: "96x96", type: "image/png" },
+              { src: currentStation.favicon, sizes: "256x256", type: "image/png" },
+            ]
+          : [
+              { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+              { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+            ],
+      });
+    }
+  }, [currentStation]);
+
+  useEffect(() => {
+    if (!("mediaSession" in navigator)) return;
+
+    navigator.mediaSession.setActionHandler("play", () => setPlaying(true));
+    navigator.mediaSession.setActionHandler("pause", () => setPlaying(false));
+    navigator.mediaSession.setActionHandler("previoustrack", () => prevStation());
+    navigator.mediaSession.setActionHandler("nexttrack", () => nextStation());
+
+    return () => {
+      navigator.mediaSession.setActionHandler("play", null);
+      navigator.mediaSession.setActionHandler("pause", null);
+      navigator.mediaSession.setActionHandler("previoustrack", null);
+      navigator.mediaSession.setActionHandler("nexttrack", null);
+    };
+  }, [setPlaying, nextStation, prevStation]);
+
+  useEffect(() => {
+    if (!("mediaSession" in navigator)) return;
+    navigator.mediaSession.playbackState = isPlaying ? "playing" : "paused";
+  }, [isPlaying]);
 
   return audioRef;
 }

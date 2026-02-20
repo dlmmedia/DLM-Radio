@@ -38,7 +38,10 @@ export function PlayerBar() {
 
   if (!currentStation) {
     return (
-      <div className="fixed bottom-0 left-0 right-0 z-50 h-16 border-t border-border/40 bg-background/80 backdrop-blur-xl flex items-center justify-center">
+      <div
+        className="fixed bottom-0 left-0 right-0 z-50 border-t border-border/40 bg-background/80 backdrop-blur-xl flex items-center justify-center"
+        style={{ height: "calc(4rem + env(safe-area-inset-bottom, 0px))", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+      >
         <div className="flex items-center gap-2 text-muted-foreground text-sm">
           <Radio className="h-4 w-4" />
           <span>Select a station to start listening</span>
@@ -51,10 +54,13 @@ export function PlayerBar() {
   const flag = getCountryFlag(currentStation.countrycode);
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 h-16 border-t border-border/40 bg-background/90 backdrop-blur-xl">
-      <div className="flex items-center h-full px-3 gap-3">
+    <div
+      className="fixed bottom-0 left-0 right-0 z-50 border-t border-border/40 bg-background/90 backdrop-blur-xl"
+      style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+    >
+      <div className="flex items-center h-16 px-2 sm:px-3 gap-1.5 sm:gap-3">
         {/* Transport Controls */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5 sm:gap-1">
           <Button
             variant="ghost"
             size="icon"
@@ -89,7 +95,7 @@ export function PlayerBar() {
 
         {/* Station Info */}
         <button
-          className="flex items-center gap-3 flex-1 min-w-0 text-left hover:opacity-80 transition-opacity"
+          className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0 text-left hover:opacity-80 transition-opacity"
           onClick={() => setDrawerStation(currentStation)}
         >
           {currentStation.favicon ? (
@@ -126,10 +132,10 @@ export function PlayerBar() {
               )}
               {flag && <span>{flag}</span>}
               {currentStation.bitrate > 0 && (
-                <span>{currentStation.bitrate}kbps</span>
+                <span className="hidden sm:inline">{currentStation.bitrate}kbps</span>
               )}
               {currentStation.codec && (
-                <span className="uppercase">{currentStation.codec}</span>
+                <span className="hidden sm:inline uppercase">{currentStation.codec}</span>
               )}
             </div>
           </div>
@@ -164,7 +170,7 @@ export function PlayerBar() {
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className="h-8 w-8 hidden sm:inline-flex"
               onClick={() =>
                 useRadioStore.getState().setVisualizerActive(
                   !useRadioStore.getState().visualizerActive

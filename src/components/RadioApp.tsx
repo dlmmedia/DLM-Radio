@@ -73,6 +73,14 @@ const SignInPrompt = dynamic(
   { ssr: false }
 );
 
+const InstallBanner = dynamic(
+  () =>
+    import("./install/InstallBanner").then((m) => ({
+      default: m.InstallBanner,
+    })),
+  { ssr: false }
+);
+
 export function RadioApp() {
   useAudioEngine();
   useIdleDetector();
@@ -232,12 +240,15 @@ export function RadioApp() {
   const isDark = resolvedTheme === "dark";
 
   return (
-    <div className="relative isolate h-screen w-screen overflow-hidden bg-[#F0F7FA] dark:bg-black">
+    <div className="relative isolate h-[100dvh] w-screen overflow-hidden bg-[#F0F7FA] dark:bg-black touch-manipulation">
       {/* Music-reactive background (behind the globe) */}
       {isDark ? <SpaceBackground /> : <SkyBackground />}
 
-      {/* Globe with transparent background — bottom-16 accounts for PlayerBar */}
-      <div className="absolute inset-0 bottom-16 z-[1]">
+      {/* Globe with transparent background — bottom accounts for PlayerBar + safe area */}
+      <div
+        className="absolute inset-0 z-[1]"
+        style={{ bottom: "calc(4rem + env(safe-area-inset-bottom, 0px))" }}
+      >
         <RadioGlobe />
       </div>
 
@@ -246,7 +257,11 @@ export function RadioApp() {
         <Button
           variant="ghost"
           size="icon"
-          className="fixed top-3 left-3 z-40 bg-background/60 backdrop-blur-sm"
+          className="fixed z-40 bg-background/60 backdrop-blur-sm"
+          style={{
+            top: "max(0.75rem, env(safe-area-inset-top, 0.75rem))",
+            left: "max(0.75rem, env(safe-area-inset-left, 0.75rem))",
+          }}
           onClick={togglePanel}
         >
           <Menu className="h-4 w-4" />
@@ -263,7 +278,8 @@ export function RadioApp() {
             <Button
               variant="ghost"
               size="icon"
-              className="fixed bottom-20 right-3 z-40 h-9 w-9 rounded-full bg-background/60 backdrop-blur-sm"
+              className="fixed right-3 z-40 h-9 w-9 rounded-full bg-background/60 backdrop-blur-sm"
+              style={{ bottom: "calc(5rem + env(safe-area-inset-bottom, 0px))" }}
               onClick={() =>
                 useRadioStore.getState().setVisualizerActive(
                   !useRadioStore.getState().visualizerActive
@@ -294,6 +310,9 @@ export function RadioApp() {
 
       {/* First-visit sign-in prompt */}
       <SignInPrompt />
+
+      {/* Install PWA / Download APK prompt */}
+      <InstallBanner />
     </div>
   );
 }

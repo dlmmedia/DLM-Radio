@@ -285,6 +285,7 @@ let nebulaCache: {
 } | null = null;
 
 function getNebulaCanvas(w: number, h: number) {
+  if (w <= 0 || h <= 0) return null;
   if (nebulaCache && nebulaCache.w === w && nebulaCache.h === h) {
     return nebulaCache;
   }
@@ -428,35 +429,37 @@ export function SpaceBackground() {
       // ── Nebulae (drawn to offscreen canvas, then composited) ──
       if (mood.nebulaCount > 0) {
         const nc = getNebulaCanvas(w, h);
-        nc.ctx.clearRect(0, 0, w, h);
+        if (nc) {
+          nc.ctx.clearRect(0, 0, w, h);
 
-        for (const neb of nebulaeRef.current) {
-          const hueShift = audio.mid * 40;
-          const hue = neb.baseHue + hueShift + time * neb.driftSpeed * 10;
-          const breathe = 0.7 + 0.3 * Math.sin(time * 0.5 + neb.phase);
-          const alpha =
-            neb.baseAlpha * breathe * mood.nebulaOpacity * (0.5 + audio.sub * 0.5);
+          for (const neb of nebulaeRef.current) {
+            const hueShift = audio.mid * 40;
+            const hue = neb.baseHue + hueShift + time * neb.driftSpeed * 10;
+            const breathe = 0.7 + 0.3 * Math.sin(time * 0.5 + neb.phase);
+            const alpha =
+              neb.baseAlpha * breathe * mood.nebulaOpacity * (0.5 + audio.sub * 0.5);
 
-          if (alpha < 0.005) continue;
+            if (alpha < 0.005) continue;
 
-          const grad = nc.ctx.createRadialGradient(
-            neb.x, neb.y, 0,
-            neb.x, neb.y, neb.radius
-          );
-          grad.addColorStop(0, `hsla(${hue}, 60%, 40%, ${alpha})`);
-          grad.addColorStop(0.4, `hsla(${hue + 30}, 50%, 30%, ${alpha * 0.6})`);
-          grad.addColorStop(1, "hsla(0, 0%, 0%, 0)");
+            const grad = nc.ctx.createRadialGradient(
+              neb.x, neb.y, 0,
+              neb.x, neb.y, neb.radius
+            );
+            grad.addColorStop(0, `hsla(${hue}, 60%, 40%, ${alpha})`);
+            grad.addColorStop(0.4, `hsla(${hue + 30}, 50%, 30%, ${alpha * 0.6})`);
+            grad.addColorStop(1, "hsla(0, 0%, 0%, 0)");
 
-          nc.ctx.fillStyle = grad;
-          nc.ctx.fillRect(
-            neb.x - neb.radius,
-            neb.y - neb.radius,
-            neb.radius * 2,
-            neb.radius * 2
-          );
+            nc.ctx.fillStyle = grad;
+            nc.ctx.fillRect(
+              neb.x - neb.radius,
+              neb.y - neb.radius,
+              neb.radius * 2,
+              neb.radius * 2
+            );
+          }
+
+          ctx.drawImage(nc.canvas as HTMLCanvasElement, 0, 0);
         }
-
-        ctx.drawImage(nc.canvas as HTMLCanvasElement, 0, 0);
       }
 
       // ── Grid lines (Neon City mood) ──

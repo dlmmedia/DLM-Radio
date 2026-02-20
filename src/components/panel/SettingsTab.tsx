@@ -9,8 +9,11 @@ import { Switch } from "@/components/ui/switch";
 import { useHistory } from "@/hooks/useHistory";
 import { useRadioStore } from "@/stores/radioStore";
 import { Button } from "@/components/ui/button";
-import { Trash2, Radio, Check, Cloud, Sun, Moon, Monitor } from "lucide-react";
+import { Trash2, Radio, Check, Cloud, Sun, Moon, Monitor, Download, Smartphone, ExternalLink } from "lucide-react";
 import { SCENE_META, SCENE_ORDER } from "@/lib/scene-presets";
+import { useInstallPrompt } from "@/hooks/useInstallPrompt";
+
+const APK_DOWNLOAD_URL = "/downloads/dlm-radio.apk";
 import type { SceneId } from "@/components/visualizer/scenes/types";
 
 export function SettingsTab() {
@@ -24,6 +27,8 @@ export function SettingsTab() {
   const setIdleTimeout = useRadioStore((s) => s.setIdleTimeout);
   const visualizerScene = useRadioStore((s) => s.visualizerScene);
   const setVisualizerScene = useRadioStore((s) => s.setVisualizerScene);
+
+  const { platform, canInstall, isInstalled, promptInstall } = useInstallPrompt();
 
   const sceneOptions: { id: SceneId | "auto"; name: string }[] = [
     { id: "auto", name: "Auto (match genre)" },
@@ -170,6 +175,52 @@ export function SettingsTab() {
               This will clear history from your account
             </p>
           )}
+        </div>
+
+        {/* Install App */}
+        <Separator />
+        <div>
+          <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
+            Get the App
+          </h2>
+          <div className="space-y-2">
+            {isInstalled ? (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground rounded-lg bg-muted/50 px-3 py-2.5">
+                <Smartphone className="h-3.5 w-3.5 text-green-500" />
+                <span>DLM Radio is installed</span>
+              </div>
+            ) : (
+              <>
+                {canInstall && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full justify-start text-xs"
+                    onClick={promptInstall}
+                  >
+                    <Download className="h-3.5 w-3.5 mr-2" />
+                    Install as App
+                  </Button>
+                )}
+                {platform === "ios" && !canInstall && (
+                  <p className="text-[11px] text-muted-foreground">
+                    Tap <strong>Share</strong> then <strong>Add to Home Screen</strong> in Safari to install.
+                  </p>
+                )}
+              </>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full justify-start text-xs"
+              asChild
+            >
+              <a href={APK_DOWNLOAD_URL} download>
+                <Download className="h-3.5 w-3.5 mr-2" />
+                Download Android APK
+              </a>
+            </Button>
+          </div>
         </div>
 
         <Separator />

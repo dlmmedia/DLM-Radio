@@ -40,3 +40,17 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# PWA service worker (generated at build time)
+public/sw.js
+public/sw.js.map
+public/swe-worker-*.js
+public/workbox-*.js
+
+# Android TWA
+android/*.keystore
+android/*.apk
+android/*.aab
+android/app/
+android/.gradle/
+android/build/
