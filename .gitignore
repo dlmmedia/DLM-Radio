@@ -51,6 +51,9 @@ public/workbox-*.js
 android/*.keystore
 android/*.apk
 android/*.aab
+
+# Allow the deployed APK in public/downloads
+!public/downloads/*.apk
 android/app/
 android/.gradle/
 android/build/

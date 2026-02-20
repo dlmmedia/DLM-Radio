@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { useHistory } from "@/hooks/useHistory";
 import { useRadioStore } from "@/stores/radioStore";
 import { Button } from "@/components/ui/button";
-import { Trash2, Radio, Check, Cloud, Sun, Moon, Monitor, Download, Smartphone, ExternalLink } from "lucide-react";
+import { Trash2, Radio, Check, Cloud, Sun, Moon, Monitor, Download, Smartphone, ExternalLink, Share, Plus } from "lucide-react";
 import { SCENE_META, SCENE_ORDER } from "@/lib/scene-presets";
 import { useInstallPrompt } from "@/hooks/useInstallPrompt";
 
@@ -75,6 +75,73 @@ export function SettingsTab() {
                 </button>
               );
             })}
+          </div>
+        </div>
+
+        <Separator />
+
+        {/* Get the App */}
+        <div>
+          <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
+            Get the App
+          </h2>
+          <div className="rounded-xl border border-border/60 bg-gradient-to-br from-violet-500/5 to-fuchsia-500/5 p-3.5 space-y-3">
+            {isInstalled && (
+              <div className="flex items-center gap-2 text-xs text-green-600 dark:text-green-400 font-medium">
+                <Check className="h-3.5 w-3.5" />
+                <span>DLM Radio is installed on this device</span>
+              </div>
+            )}
+
+            {!isInstalled && (
+              <>
+                {canInstall && (
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="w-full justify-start text-xs gap-2 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white border-0"
+                    onClick={promptInstall}
+                  >
+                    {platform === "desktop" ? (
+                      <Monitor className="h-3.5 w-3.5" />
+                    ) : (
+                      <Download className="h-3.5 w-3.5" />
+                    )}
+                    {platform === "desktop" ? "Install Desktop App" : "Install as App"}
+                  </Button>
+                )}
+                {platform === "ios" && !canInstall && (
+                  <div className="space-y-1.5 text-[11px] text-muted-foreground">
+                    <p className="font-medium text-foreground text-xs">Install on iOS</p>
+                    <div className="flex items-center gap-2">
+                      <Share className="h-3 w-3 flex-shrink-0 text-violet-500" />
+                      <span>Tap <strong>Share</strong> in Safari</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Plus className="h-3 w-3 flex-shrink-0 text-violet-500" />
+                      <span>Then <strong>Add to Home Screen</strong></span>
+                    </div>
+                  </div>
+                )}
+                {platform === "desktop" && !canInstall && (
+                  <p className="text-[11px] text-muted-foreground">
+                    Use Chrome or Edge to install as a desktop app.
+                  </p>
+                )}
+              </>
+            )}
+
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full justify-start text-xs"
+              asChild
+            >
+              <a href={APK_DOWNLOAD_URL} download>
+                <Download className="h-3.5 w-3.5 mr-2" />
+                Download Android APK
+              </a>
+            </Button>
           </div>
         </div>
 
@@ -175,52 +242,6 @@ export function SettingsTab() {
               This will clear history from your account
             </p>
           )}
-        </div>
-
-        {/* Install App */}
-        <Separator />
-        <div>
-          <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
-            Get the App
-          </h2>
-          <div className="space-y-2">
-            {isInstalled ? (
-              <div className="flex items-center gap-2 text-xs text-muted-foreground rounded-lg bg-muted/50 px-3 py-2.5">
-                <Smartphone className="h-3.5 w-3.5 text-green-500" />
-                <span>DLM Radio is installed</span>
-              </div>
-            ) : (
-              <>
-                {canInstall && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full justify-start text-xs"
-                    onClick={promptInstall}
-                  >
-                    <Download className="h-3.5 w-3.5 mr-2" />
-                    Install as App
-                  </Button>
-                )}
-                {platform === "ios" && !canInstall && (
-                  <p className="text-[11px] text-muted-foreground">
-                    Tap <strong>Share</strong> then <strong>Add to Home Screen</strong> in Safari to install.
-                  </p>
-                )}
-              </>
-            )}
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full justify-start text-xs"
-              asChild
-            >
-              <a href={APK_DOWNLOAD_URL} download>
-                <Download className="h-3.5 w-3.5 mr-2" />
-                Download Android APK
-              </a>
-            </Button>
-          </div>
         </div>
 
         <Separator />

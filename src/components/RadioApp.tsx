@@ -7,6 +7,7 @@ import { useAudioEngine } from "@/hooks/useAudioEngine";
 import { useRadioStore } from "@/stores/radioStore";
 import { useHistory } from "@/hooks/useHistory";
 import { useIdleDetector } from "@/hooks/useIdleDetector";
+import { useSidebarAutoCollapse } from "@/hooks/useSidebarAutoCollapse";
 import { recordListening } from "@/lib/recommendations";
 import { searchStations } from "@/lib/radio-browser";
 import { PlayerBar } from "./player/PlayerBar";
@@ -84,6 +85,7 @@ const InstallBanner = dynamic(
 export function RadioApp() {
   useAudioEngine();
   useIdleDetector();
+  useSidebarAutoCollapse();
   const { addToHistory } = useHistory();
   const {
     currentStation,
