@@ -1,9 +1,10 @@
 "use client";
 
 import { useRadioStore } from "@/stores/radioStore";
+import { useFavorites } from "@/hooks/useFavorites";
 import { getGenreColor, getCountryFlag } from "@/lib/constants";
 import type { Station } from "@/lib/types";
-import { Play, Pause, Radio } from "lucide-react";
+import { Play, Pause, Radio, Heart } from "lucide-react";
 
 interface StationRowProps {
   station: Station;
@@ -13,7 +14,9 @@ interface StationRowProps {
 
 export function StationRow({ station, showCountry = false, onClick }: StationRowProps) {
   const { currentStation, isPlaying, setStation, setPlaying } = useRadioStore();
+  const { isFavorite, toggleFavorite } = useFavorites();
   const isActive = currentStation?.stationuuid === station.stationuuid;
+  const faved = isFavorite(station.stationuuid);
 
   const handleClick = () => {
     if (onClick) {
@@ -27,18 +30,22 @@ export function StationRow({ station, showCountry = false, onClick }: StationRow
     }
   };
 
+  const handleFavorite = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    toggleFavorite(station);
+  };
+
   const genre = station.tags?.split(",")[0]?.trim();
   const flag = showCountry ? getCountryFlag(station.countrycode) : null;
 
   return (
-    <button
-      onClick={handleClick}
+    <div
       className={`w-full flex items-start gap-3 px-3 py-2.5 rounded-lg text-left transition-colors hover:bg-accent/50 group ${
         isActive ? "bg-accent/60" : ""
       }`}
     >
       {/* Play indicator / Favicon */}
-      <div className="relative h-8 w-8 flex-shrink-0">
+      <button onClick={handleClick} className="relative h-8 w-8 flex-shrink-0">
         {station.favicon ? (
           <img
             src={station.favicon}
@@ -64,10 +71,10 @@ export function StationRow({ station, showCountry = false, onClick }: StationRow
             <Play className="h-3.5 w-3.5 text-white ml-0.5" />
           )}
         </div>
-      </div>
+      </button>
 
       {/* Station info */}
-      <div className="min-w-0 flex-1">
+      <button onClick={handleClick} className="min-w-0 flex-1 text-left">
         <div className="text-sm font-medium line-clamp-2 leading-snug" title={station.name}>
           {station.name}
         </div>
@@ -88,16 +95,33 @@ export function StationRow({ station, showCountry = false, onClick }: StationRow
             </>
           )}
         </div>
-      </div>
+      </button>
 
-      {/* Active indicator */}
-      {isActive && isPlaying && (
-        <div className="flex gap-0.5 items-end h-4">
-          <span className="w-0.5 bg-primary rounded-full animate-pulse" style={{ height: "40%", animationDelay: "0ms" }} />
-          <span className="w-0.5 bg-primary rounded-full animate-pulse" style={{ height: "70%", animationDelay: "150ms" }} />
-          <span className="w-0.5 bg-primary rounded-full animate-pulse" style={{ height: "50%", animationDelay: "300ms" }} />
-        </div>
-      )}
-    </button>
+      {/* Favorite + Active indicator */}
+      <div className="flex items-center gap-1 flex-shrink-0 pt-0.5">
+        <button
+          onClick={handleFavorite}
+          className={`h-7 w-7 flex items-center justify-center rounded-md transition-all ${
+            faved
+              ? "opacity-100"
+              : "opacity-0 group-hover:opacity-70 hover:!opacity-100"
+          }`}
+          title={faved ? "Remove from favorites" : "Add to favorites"}
+        >
+          <Heart
+            className={`h-3.5 w-3.5 transition-colors ${
+              faved ? "fill-red-500 text-red-500" : "text-muted-foreground"
+            }`}
+          />
+        </button>
+        {isActive && isPlaying && (
+          <div className="flex gap-0.5 items-end h-4">
+            <span className="w-0.5 bg-primary rounded-full animate-pulse" style={{ height: "40%", animationDelay: "0ms" }} />
+            <span className="w-0.5 bg-primary rounded-full animate-pulse" style={{ height: "70%", animationDelay: "150ms" }} />
+            <span className="w-0.5 bg-primary rounded-full animate-pulse" style={{ height: "50%", animationDelay: "300ms" }} />
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

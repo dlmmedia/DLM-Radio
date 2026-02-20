@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import { useRadioStore } from "@/stores/radioStore";
 import { useFavorites } from "@/hooks/useFavorites";
 import { searchStations, voteForStation } from "@/lib/radio-browser";
 import { getGenreColor, getCountryFlag } from "@/lib/constants";
 import type { Station } from "@/lib/types";
 import { StationRow } from "@/components/panel/StationRow";
+import { AddToPlaylistDialog } from "@/components/playlist/AddToPlaylistDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -21,15 +23,19 @@ import {
   Globe,
   Signal,
   Loader2,
+  ListPlus,
 } from "lucide-react";
 
 export function StationDrawer() {
   const { drawerStation, setDrawerStation } = useRadioStore();
   const { isFavorite, toggleFavorite } = useFavorites();
+  const { status } = useSession();
+  const isAuth = status === "authenticated";
   const [similarStations, setSimilarStations] = useState<Station[]>([]);
   const [voting, setVoting] = useState(false);
   const [voted, setVoted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [playlistDialogOpen, setPlaylistDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!drawerStation) return;
@@ -176,7 +182,7 @@ export function StationDrawer() {
                 </div>
 
                 {/* Actions */}
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <Button
                     variant="outline"
                     size="sm"
@@ -208,6 +214,17 @@ export function StationDrawer() {
                     )}
                     {voted ? "Voted!" : "Vote"}
                   </Button>
+                  {isAuth && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-xs h-8"
+                      onClick={() => setPlaylistDialogOpen(true)}
+                    >
+                      <ListPlus className="h-3.5 w-3.5 mr-1.5" />
+                      Add to Playlist
+                    </Button>
+                  )}
                   {drawerStation.homepage && (
                     <Button
                       variant="outline"
@@ -253,6 +270,15 @@ export function StationDrawer() {
               </div>
             </ScrollArea>
           </motion.div>
+
+          {/* Add to Playlist Dialog */}
+          {isAuth && (
+            <AddToPlaylistDialog
+              station={drawerStation}
+              open={playlistDialogOpen}
+              onOpenChange={setPlaylistDialogOpen}
+            />
+          )}
         </>
       )}
     </AnimatePresence>

@@ -10,6 +10,8 @@ import { SettingsTab } from "./SettingsTab";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Radio } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { UserMenu } from "@/components/auth/UserMenu";
+import { SignInBanner } from "@/components/auth/SignInBanner";
 
 const tabComponent: Record<string, React.FC> = {
   explore: ExploreTab,
@@ -51,15 +53,21 @@ export function SidePanel() {
                 DLM Radio
               </h1>
             </motion.div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={togglePanel}
-            >
-              <X className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-1">
+              <UserMenu />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={togglePanel}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
+
+          {/* Sign-in banner (only visible when not authenticated) */}
+          <SignInBanner />
 
           {/* Tab Content */}
           <div className="flex-1 overflow-hidden">

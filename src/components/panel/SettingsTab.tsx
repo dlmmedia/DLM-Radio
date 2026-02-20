@@ -1,5 +1,6 @@
 "use client";
 
+import { useSession } from "next-auth/react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
@@ -7,12 +8,14 @@ import { Switch } from "@/components/ui/switch";
 import { useHistory } from "@/hooks/useHistory";
 import { useRadioStore } from "@/stores/radioStore";
 import { Button } from "@/components/ui/button";
-import { Trash2, Radio, Check } from "lucide-react";
+import { Trash2, Radio, Check, Cloud } from "lucide-react";
 import { SCENE_META, SCENE_ORDER } from "@/lib/scene-presets";
 import type { SceneId } from "@/components/visualizer/scenes/types";
 
 export function SettingsTab() {
-  const { clearHistory } = useHistory();
+  const { status } = useSession();
+  const isAuth = status === "authenticated";
+  const { clearHistory, isCloudSynced } = useHistory();
   const autoVisualizer = useRadioStore((s) => s.autoVisualizer);
   const idleTimeout = useRadioStore((s) => s.idleTimeout);
   const setAutoVisualizer = useRadioStore((s) => s.setAutoVisualizer);
@@ -28,6 +31,14 @@ export function SettingsTab() {
   return (
     <ScrollArea className="h-full">
       <div className="p-4 space-y-5">
+        {/* Sync indicator */}
+        {isAuth && (
+          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+            <Cloud className="h-3 w-3" />
+            <span>Settings synced to your account</span>
+          </div>
+        )}
+
         {/* Visualizer */}
         <div>
           <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
@@ -118,6 +129,11 @@ export function SettingsTab() {
             <Trash2 className="h-3.5 w-3.5 mr-2" />
             Clear listening history
           </Button>
+          {isCloudSynced && (
+            <p className="text-[10px] text-muted-foreground mt-1.5 ml-0.5">
+              This will clear history from your account
+            </p>
+          )}
         </div>
 
         <Separator />

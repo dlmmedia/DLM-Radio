@@ -48,6 +48,22 @@ const VisualizerOverlay = dynamic(
   { ssr: false }
 );
 
+const OverlayOrchestrator = dynamic(
+  () =>
+    import("./overlay/OverlayOrchestrator").then((m) => ({
+      default: m.OverlayOrchestrator,
+    })),
+  { ssr: false }
+);
+
+const SignInPrompt = dynamic(
+  () =>
+    import("./auth/SignInPrompt").then((m) => ({
+      default: m.SignInPrompt,
+    })),
+  { ssr: false }
+);
+
 export function RadioApp() {
   useAudioEngine();
   useIdleDetector();
@@ -249,6 +265,9 @@ export function RadioApp() {
         </Tooltip>
       )}
 
+      {/* Marketing overlay system (z-33, between globe and UI controls) */}
+      <OverlayOrchestrator />
+
       {/* Side Panel */}
       <SidePanel />
 
@@ -260,6 +279,9 @@ export function RadioApp() {
 
       {/* Fullscreen Visualizer */}
       <VisualizerOverlay />
+
+      {/* First-visit sign-in prompt */}
+      <SignInPrompt />
     </div>
   );
 }
