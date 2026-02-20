@@ -1,10 +1,11 @@
 {
   "packageId": "com.dlm.radio",
-  "host": "dlm-radio.example.com",
+  "host": "dlm-radio-production.up.railway.app",
   "name": "DLM Radio",
   "launcherName": "DLM Radio",
   "display": "standalone",
   "themeColor": "#000000",
+  "themeColorDark": "#000000",
   "navigationColor": "#000000",
   "navigationColorDark": "#000000",
   "navigationDividerColor": "#000000",
@@ -12,21 +13,22 @@
   "backgroundColor": "#000000",
   "enableNotifications": true,
   "startUrl": "/",
-  "iconUrl": "https://dlm-radio.example.com/icons/icon-512.png",
-  "maskableIconUrl": "https://dlm-radio.example.com/icons/icon-maskable-512.png",
+  "iconUrl": "https://dlm-radio-production.up.railway.app/icons/icon-512.png",
+  "maskableIconUrl": "https://dlm-radio-production.up.railway.app/icons/icon-maskable-512.png",
   "splashScreenFadeOutDuration": 300,
   "signingKey": {
     "path": "./android.keystore",
     "alias": "dlm-radio"
   },
+  "appVersion": "1.0.0",
   "appVersionCode": 1,
-  "appVersionName": "1.0.0",
   "shortcuts": [],
   "generatorApp": "bubblewrap-cli",
-  "webManifestUrl": "https://dlm-radio.example.com/manifest.webmanifest",
+  "webManifestUrl": "https://dlm-radio-production.up.railway.app/manifest.webmanifest",
   "fallbackType": "customtabs",
   "features": {},
   "enableSiteSettingsShortcut": true,
   "isChromeOSOnly": false,
-  "orientation": "portrait"
+  "orientation": "portrait",
+  "minSdkVersion": 21
 }

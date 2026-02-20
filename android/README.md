@@ -1,89 +1,69 @@
 # DLM Radio - Android APK (TWA)
 
 This directory contains the configuration for wrapping the DLM Radio PWA into an
-Android APK using **Trusted Web Activity (TWA)** via [Bubblewrap](https://github.com/nicedoc/nicedoc/nicedoc).
+Android APK using **Trusted Web Activity (TWA)** via [Bubblewrap](https://github.com/GoogleChromeLabs/bubblewrap).
+
+## Quick Build
+
+```bash
+npm run build:apk
+```
+
+This runs `scripts/build-apk.mjs` which:
+1. Reads `twa-manifest.json` for app configuration
+2. Generates a signing keystore (first run only)
+3. Updates `public/.well-known/assetlinks.json` with the signing fingerprint
+4. Generates the Android TWA project via `@bubblewrap/core`
+5. Builds, aligns, and signs the APK
+6. Copies the final APK to `public/downloads/dlm-radio.apk`
 
 ## Prerequisites
 
 - **Node.js** 14.15.0 or higher
-- **Java JDK 8** (or 11+)
-- **Android SDK** (Bubblewrap can download this for you on first run)
-- **Google Play Developer account** ($25 one-time fee)
-- The PWA must be **deployed and live** with HTTPS
+- **Java JDK 17** — downloaded automatically to `~/.bubblewrap/jdk/` on first build
+- **Android SDK** — command-line tools at `~/.bubblewrap/android_sdk/`
+- **@bubblewrap/cli** — installed as a dev dependency
 
-## Setup
-
-### 1. Install Bubblewrap CLI
+### One-Time Setup
 
 ```bash
-npm install -g @nicedoc/cli
+# Install JDK 17
+mkdir -p ~/.bubblewrap/jdk && cd ~/.bubblewrap/jdk
+curl -L -o jdk17.tar.gz "https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.14%2B7/OpenJDK17U-jdk_aarch64_mac_hotspot_17.0.14_7.tar.gz"
+tar xzf jdk17.tar.gz && rm jdk17.tar.gz
+
+# Install Android SDK command-line tools
+mkdir -p ~/.bubblewrap/android_sdk && cd ~/.bubblewrap/android_sdk
+curl -L -o cmdline-tools.zip "https://dl.google.com/android/repository/commandlinetools-mac-11076708_latest.zip"
+unzip -q cmdline-tools.zip && rm cmdline-tools.zip
+mkdir -p cmdline-tools-temp && mv cmdline-tools cmdline-tools-temp/latest && mv cmdline-tools-temp cmdline-tools
+
+# Install build tools
+export JAVA_HOME="$HOME/.bubblewrap/jdk/jdk-17.0.14+7/Contents/Home"
+yes | ~/.bubblewrap/android_sdk/cmdline-tools/latest/bin/sdkmanager \
+  --sdk_root=$HOME/.bubblewrap/android_sdk \
+  "build-tools;34.0.0" "platforms;android-34"
 ```
 
-### 2. Update Configuration
+## Configuration
 
-Edit `twa-manifest.json` and replace:
-
-- `host` with your actual deployed domain (e.g. `dlm-radio.up.railway.app`)
-- `iconUrl` and `maskableIconUrl` with full URLs to your deployed icons
-- `webManifestUrl` with your actual manifest URL
-
-### 3. Initialize the Project
-
-```bash
-cd android
-bubblewrap init --manifest=https://YOUR_DOMAIN/manifest.webmanifest
-```
-
-Bubblewrap will:
-- Download Android SDK dependencies (if needed)
-- Generate the Android project
-- Prompt you to create a signing key (save it securely!)
-
-### 4. Update Digital Asset Links
-
-After the signing key is created, get the SHA-256 fingerprint:
-
-```bash
-keytool -list -v -keystore android.keystore -alias dlm-radio
-```
-
-Copy the SHA-256 fingerprint and update `public/.well-known/assetlinks.json` in the
-main project, replacing the placeholder value. Then redeploy the web app.
-
-### 5. Build the APK / AAB
-
-```bash
-bubblewrap build
-```
-
-This generates:
-- `app-release-signed.apk` - for direct installation / testing
-- `app-release-bundle.aab` - for Google Play Store upload
-
-### 6. Test the APK
-
-```bash
-adb install app-release-signed.apk
-```
-
-### 7. Publish to Google Play
-
-1. Go to [Google Play Console](https://play.google.com/console)
-2. Create a new app
-3. Upload the `.aab` file in Production > Releases
-4. Fill in store listing, screenshots, etc.
-5. Submit for review
+Edit `twa-manifest.json` to change:
+- `host` — your deployed domain
+- `iconUrl` / `maskableIconUrl` — full URLs to your deployed icons
+- `webManifestUrl` — your manifest URL
+- `packageId` — Android package name
+- `appVersion` / `appVersionCode` — bump for each release
 
 ## How TWA Works
 
 The APK is a thin Android shell that launches your PWA in a Chrome Custom Tab
-with the browser UI removed. Key benefits:
+with the browser UI removed:
 
-- **No native code** - the APK just points to your web app
-- **Auto-updates** - updating the web app updates the Play Store app instantly
-- **Full Web API access** - Web Audio, MediaSession, Push Notifications all work
-- **Background audio** - continues playing when the app is backgrounded
-- **Offline support** - the service worker handles caching
+- **No native code** — the APK just points to your web app
+- **Auto-updates** — updating the web app updates the Play Store app instantly
+- **Full Web API access** — Web Audio, MediaSession, Push Notifications all work
+- **Background audio** — continues playing when the app is backgrounded
+- **Offline support** — the service worker handles caching
 
 ## Important Notes
 

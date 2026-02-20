@@ -1,11 +1,13 @@
 [
   {
-    "relation": ["delegate_permission/common.handle_all_urls"],
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
     "target": {
       "namespace": "android_app",
       "package_name": "com.dlm.radio",
       "sha256_cert_fingerprints": [
-        "__REPLACE_WITH_YOUR_SIGNING_KEY_SHA256_FINGERPRINT__"
+        "E8:E9:9B:BB:CA:C0:A1:47:3D:8E:AE:38:92:72:2E:CF:10:82:1A:E8:87:93:5A:EB:B8:CD:DD:19:7C:1B:A0:AD"
       ]
     }
   }
