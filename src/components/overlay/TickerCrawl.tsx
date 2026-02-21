@@ -15,7 +15,7 @@ export function TickerCrawl({ messages, visible, onComplete }: TickerCrawlProps)
   const innerRef = useRef<HTMLDivElement>(null);
   const [cssVars, setCssVars] = useState<Record<string, string> | null>(null);
   const completedRef = useRef(false);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const timeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
     if (!visible) {
