@@ -140,6 +140,7 @@ function GlobeContent() {
   const stationsRef = useRef<Station[]>([]);
   const audioLayerRef = useRef<AudioReactiveLayer | null>(null);
   const flyingFromClickRef = useRef(false);
+  const resettingRef = useRef(false);
 
   // Load stations for globe
   useEffect(() => {
@@ -300,6 +301,13 @@ function GlobeContent() {
     }
   }, [isDark]);
 
+  const handleHomeReset = useCallback(() => {
+    resettingRef.current = true;
+    map?.once("moveend", () => {
+      resettingRef.current = false;
+    });
+  }, [map]);
+
   // When currentStation changes, update audio layer position + genre hue
   useEffect(() => {
     if (!currentStation?.geo_lat || !currentStation?.geo_long) return;
@@ -318,6 +326,8 @@ function GlobeContent() {
       flyingFromClickRef.current = false;
       return;
     }
+
+    if (resettingRef.current) return;
 
     if (map) {
       const currentCenter = map.getCenter();
@@ -412,6 +422,7 @@ function GlobeContent() {
         showCompass
         showFullscreen
         showReset
+        onReset={handleHomeReset}
         className="bottom-20 right-3"
       />
     </>

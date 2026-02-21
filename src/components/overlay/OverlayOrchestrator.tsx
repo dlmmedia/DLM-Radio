@@ -143,12 +143,12 @@ export function OverlayOrchestrator() {
     return null;
   }, [isOnCooldown]);
 
-  // Build ticker message set (shuffled, 12 per batch)
+  // Build ticker message set (shuffled, 8 per batch — longer messages need fewer items)
   const tickerMessages = useMemo(() => {
     const order = shuffledTickerOrder.current;
-    if (order.length === 0) return TICKER_MESSAGES.slice(0, 12);
+    if (order.length === 0) return TICKER_MESSAGES.slice(0, 8);
 
-    const batchSize = 12;
+    const batchSize = 8;
     const startOffset = (tickerContentIndex * batchSize) % order.length;
     const batch = [];
     for (let i = 0; i < batchSize; i++) {

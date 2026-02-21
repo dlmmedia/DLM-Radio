@@ -164,3 +164,13 @@
 .animate-shimmer {
   animation: shimmer 6s linear infinite;
 }
+
+@keyframes ticker-crawl {
+  from { transform: translate3d(var(--ticker-start), 0, 0); }
+  to   { transform: translate3d(var(--ticker-end), 0, 0); }
+}
+
+.ticker-crawl-animate {
+  animation: ticker-crawl var(--ticker-duration) linear forwards;
+  will-change: transform;
+}

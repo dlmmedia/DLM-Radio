@@ -725,6 +725,8 @@ type MapControlsProps = {
   className?: string;
   /** Callback with user coordinates when located */
   onLocate?: (coords: { longitude: number; latitude: number }) => void;
+  /** Callback fired when the reset/home button is pressed, before the animation starts */
+  onReset?: () => void;
 };
 
 const positionClasses = {
@@ -786,6 +788,7 @@ function MapControls({
   resetView,
   className,
   onLocate,
+  onReset,
 }: MapControlsProps) {
   const { map } = useMap();
   const [waitingForLocation, setWaitingForLocation] = useState(false);
@@ -843,6 +846,7 @@ function MapControls({
 
   const handleReset = useCallback(() => {
     if (!map) return;
+    onReset?.();
     map.stop();
     const view = { ...DEFAULT_RESET_VIEW, ...resetView };
     map.flyTo({
@@ -852,9 +856,8 @@ function MapControls({
       pitch: view.pitch,
       duration: 1800,
       essential: true,
-      curve: 1.4,
     });
-  }, [map, resetView]);
+  }, [map, resetView, onReset]);
 
   return (
     <div

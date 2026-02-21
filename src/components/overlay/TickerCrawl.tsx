@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { TickerMessage } from "@/lib/overlay-content";
 
@@ -13,43 +13,52 @@ interface TickerCrawlProps {
 export function TickerCrawl({ messages, visible, onComplete }: TickerCrawlProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
-  const [ready, setReady] = useState(false);
-  const [contentWidth, setContentWidth] = useState(0);
-  const [containerWidth, setContainerWidth] = useState(0);
-
-  const joined = messages.map((m) => m.text).join("   \u2022   ");
-
-  const measure = useCallback(() => {
-    const cw = innerRef.current?.scrollWidth ?? 0;
-    const vw = containerRef.current?.offsetWidth ?? 0;
-    if (cw > 0 && vw > 0) {
-      setContentWidth(cw);
-      setContainerWidth(vw);
-      setReady(true);
-    }
-  }, []);
+  const [cssVars, setCssVars] = useState<Record<string, string> | null>(null);
+  const completedRef = useRef(false);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
     if (!visible) {
-      setReady(false);
+      setCssVars(null);
+      completedRef.current = false;
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
       return;
     }
-    // Measure after a frame so the DOM has rendered the hidden content
-    const raf = requestAnimationFrame(() => {
-      measure();
+
+    let raf1: number;
+    let raf2: number;
+
+    raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => {
+        const contentW = innerRef.current?.scrollWidth ?? 0;
+        const viewportW = containerRef.current?.offsetWidth ?? 0;
+
+        if (contentW > 0 && viewportW > 0) {
+          const speed = 55;
+          const duration = (contentW + viewportW) / speed;
+
+          setCssVars({
+            "--ticker-start": `${viewportW}px`,
+            "--ticker-end": `${-contentW}px`,
+            "--ticker-duration": `${duration}s`,
+          });
+
+          timeoutRef.current = setTimeout(() => {
+            if (!completedRef.current) {
+              completedRef.current = true;
+              onComplete();
+            }
+          }, duration * 1000 + 600);
+        }
+      });
     });
-    return () => cancelAnimationFrame(raf);
-  }, [visible, joined, measure]);
 
-  const totalDistance = contentWidth + containerWidth;
-  const speed = 60;
-  const duration = totalDistance / speed;
-
-  useEffect(() => {
-    if (!visible || !ready) return;
-    const timer = setTimeout(onComplete, duration * 1000 + 500);
-    return () => clearTimeout(timer);
-  }, [visible, ready, duration, onComplete]);
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, [visible, onComplete]);
 
   return (
     <AnimatePresence>
@@ -57,28 +66,19 @@ export function TickerCrawl({ messages, visible, onComplete }: TickerCrawlProps)
         <motion.div
           ref={containerRef}
           initial={{ opacity: 0 }}
-          animate={{ opacity: 1, transition: { duration: 0.6 } }}
-          exit={{ opacity: 0, transition: { duration: 0.5 } }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.5 }}
           className="pointer-events-none fixed bottom-16 left-0 right-0 z-[32] h-7 overflow-hidden bg-white/60 dark:bg-black/25 backdrop-blur-md border-y border-black/[0.06] dark:border-white/[0.04]"
         >
-          <motion.div
+          <div
             ref={innerRef}
-            initial={false}
-            animate={
-              ready
-                ? { x: -contentWidth }
-                : { x: containerWidth || "100%" }
+            className={`absolute top-0 flex h-full items-center whitespace-nowrap ${cssVars ? "ticker-crawl-animate" : ""}`}
+            style={
+              cssVars
+                ? (cssVars as React.CSSProperties)
+                : { transform: "translate3d(100vw, 0, 0)" }
             }
-            transition={
-              ready
-                ? { duration, ease: "linear" }
-                : { duration: 0 }
-            }
-            style={{
-              willChange: "transform",
-              x: ready ? undefined : containerWidth || "100%",
-            }}
-            className="absolute top-0 flex h-full items-center whitespace-nowrap"
           >
             {messages.map((msg, i) => (
               <span key={msg.id} className="inline-flex items-center">
@@ -96,11 +96,13 @@ export function TickerCrawl({ messages, visible, onComplete }: TickerCrawlProps)
                   {msg.text}
                 </span>
                 {i < messages.length - 1 && (
-                  <span className="mx-6 text-[8px] text-black/30 dark:text-white/20">{"\u2022"}</span>
+                  <span className="mx-6 text-[8px] text-black/30 dark:text-white/20">
+                    {"\u2022"}
+                  </span>
                 )}
               </span>
             ))}
-          </motion.div>
+          </div>
         </motion.div>
       )}
     </AnimatePresence>

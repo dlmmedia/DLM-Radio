@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { useHistory } from "@/hooks/useHistory";
 import { useRadioStore } from "@/stores/radioStore";
 import { Button } from "@/components/ui/button";
-import { Trash2, Radio, Check, Cloud, Sun, Moon, Monitor, Download, Smartphone, ExternalLink, Share, Plus } from "lucide-react";
+import { Trash2, Radio, Check, Cloud, Sun, Moon, Monitor, Download, Smartphone, ExternalLink, Share, Plus, Globe } from "lucide-react";
 import { SCENE_META, SCENE_ORDER } from "@/lib/scene-presets";
 import { useInstallPrompt } from "@/hooks/useInstallPrompt";
 
@@ -93,9 +93,13 @@ export function SettingsTab() {
               </div>
             )}
 
+            {/* PWA Install */}
             {!isInstalled && (
-              <>
-                {canInstall && (
+              <div className="space-y-2">
+                <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                  Progressive Web App
+                </p>
+                {canInstall ? (
                   <Button
                     variant="default"
                     size="sm"
@@ -109,10 +113,8 @@ export function SettingsTab() {
                     )}
                     {platform === "desktop" ? "Install Desktop App" : "Install as App"}
                   </Button>
-                )}
-                {platform === "ios" && !canInstall && (
+                ) : platform === "ios" ? (
                   <div className="space-y-1.5 text-[11px] text-muted-foreground">
-                    <p className="font-medium text-foreground text-xs">Install on iOS</p>
                     <div className="flex items-center gap-2">
                       <Share className="h-3 w-3 flex-shrink-0 text-violet-500" />
                       <span>Tap <strong>Share</strong> in Safari</span>
@@ -122,26 +124,33 @@ export function SettingsTab() {
                       <span>Then <strong>Add to Home Screen</strong></span>
                     </div>
                   </div>
-                )}
-                {platform === "desktop" && !canInstall && (
+                ) : (
                   <p className="text-[11px] text-muted-foreground">
-                    Use Chrome or Edge to install as a desktop app.
+                    Use Chrome or Edge to install as a desktop or mobile app.
                   </p>
                 )}
-              </>
+              </div>
             )}
 
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full justify-start text-xs"
-              asChild
-            >
-              <a href={APK_DOWNLOAD_URL} download>
-                <Download className="h-3.5 w-3.5 mr-2" />
-                Download Android APK
-              </a>
-            </Button>
+            {/* Android APK */}
+            <div className="space-y-2">
+              {!isInstalled && (
+                <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                  Android
+                </p>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full justify-start text-xs"
+                asChild
+              >
+                <a href={APK_DOWNLOAD_URL} download>
+                  <Smartphone className="h-3.5 w-3.5 mr-2" />
+                  Download Android APK
+                </a>
+              </Button>
+            </div>
           </div>
         </div>
 

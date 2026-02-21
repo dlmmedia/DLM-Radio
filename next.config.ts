@@ -8,6 +8,7 @@ const withSerwist = withSerwistInit({
 });
 
 const nextConfig: NextConfig = {
+  serverExternalPackages: ["ws", "@neondatabase/serverless"],
   turbopack: {},
   async headers() {
     return [
