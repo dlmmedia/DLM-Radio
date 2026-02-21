@@ -1,6 +1,6 @@
-# DLM Radio - Android APK (TWA)
+# DLM World Radio - Android APK (TWA)
 
-This directory contains the configuration for wrapping the DLM Radio PWA into an
+This directory contains the configuration for wrapping the DLM World Radio PWA into an
 Android APK using **Trusted Web Activity (TWA)** via [Bubblewrap](https://github.com/GoogleChromeLabs/bubblewrap).
 
 ## Quick Build

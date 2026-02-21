@@ -3,8 +3,8 @@ import { redirect } from "next/navigation";
 import { SignInForm } from "@/components/auth/SignInForm";
 
 export const metadata = {
-  title: "Sign In — DLM Radio",
-  description: "Sign in to DLM Radio to save your favorites and sync across devices.",
+  title: "Sign In — DLM World Radio",
+  description: "Sign in to DLM World Radio to save your favorites and sync across devices.",
 };
 
 export default async function SignInPage() {

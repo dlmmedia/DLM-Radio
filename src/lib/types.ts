@@ -99,10 +99,13 @@ export interface AudioData {
 
 export type PanelTab = "explore" | "favorites" | "browse" | "search" | "settings";
 
+export type PlaylistCategory = "featured" | "mood" | "genre" | "regional" | "talk";
+
 export interface PlaylistDefinition {
   id: string;
   name: string;
   description: string;
+  category: PlaylistCategory;
   query: StationSearchParams;
   color: string;
 }

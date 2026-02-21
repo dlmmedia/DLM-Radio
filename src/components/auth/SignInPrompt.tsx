@@ -25,7 +25,7 @@ export function SignInPrompt() {
                 <Radio className="h-4 w-4 text-primary" />
               </div>
               <div>
-                <p className="text-sm font-semibold">Join DLM Radio</p>
+                <p className="text-sm font-semibold">Join DLM World Radio</p>
                 <p className="text-xs text-muted-foreground">
                   Free, takes 5 seconds
                 </p>

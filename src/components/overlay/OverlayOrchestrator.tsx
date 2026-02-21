@@ -17,8 +17,6 @@ import {
   getPromoDuration,
   calculateReadingDuration,
   COOLDOWN_MS,
-  MIN_GAP_MS,
-  TICKER_DURATION_MS,
 } from "@/lib/overlay-scheduler";
 import { AppPromoCard } from "./cards/AppPromoCard";
 import { AffiliateCard } from "./cards/AffiliateCard";
@@ -29,6 +27,15 @@ import { TickerCrawl } from "./TickerCrawl";
 let idCounter = 0;
 function nextId() {
   return `overlay-${++idCounter}-${Date.now()}`;
+}
+
+function shuffleArray<T>(arr: T[]): T[] {
+  const copy = [...arr];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
 }
 
 export function OverlayOrchestrator() {
@@ -44,6 +51,7 @@ export function OverlayOrchestrator() {
     shownHints,
     lastShownAt,
     cardHistory,
+    nextTypeIndex,
     paused,
     showCard,
     dismissCard,
@@ -51,6 +59,7 @@ export function OverlayOrchestrator() {
     advanceTickerIndex,
     markHintShown,
     isOnCooldown,
+    advanceTypeIndex,
   } = useOverlayStore();
 
   // Pre-build weighted promo queue
@@ -58,12 +67,19 @@ export function OverlayOrchestrator() {
   const promoQueueIdx = useRef(0);
   const affiliateIdx = useRef(0);
 
+  // Shuffled ticker order (once per session)
+  const shuffledTickerOrder = useRef<number[]>([]);
+
   useEffect(() => {
     promoQueue.current = buildWeightedPromoQueue(
       APP_PROMOS.length,
       APP_PROMOS.map((p) => p.tier)
     );
     promoQueueIdx.current = 0;
+
+    shuffledTickerOrder.current = shuffleArray(
+      Array.from({ length: TICKER_MESSAGES.length }, (_, i) => i)
+    );
   }, []);
 
   const tickerLastShown = useRef(0);
@@ -82,19 +98,16 @@ export function OverlayOrchestrator() {
     const cc = currentStation.countrycode?.toUpperCase();
     const tags = currentStation.tags?.toLowerCase() ?? "";
 
-    // Try country match first
     const countryFact = CONTEXT_FACTS.find(
       (f) => f.countryCode === cc && !isOnCooldown(f.id, COOLDOWN_MS)
     );
     if (countryFact) return countryFact;
 
-    // Try genre match
     const genreFact = CONTEXT_FACTS.find(
       (f) => f.genre && tags.includes(f.genre) && !isOnCooldown(f.id, COOLDOWN_MS)
     );
     if (genreFact) return genreFact;
 
-    // Random fallback
     const available = CONTEXT_FACTS.filter((f) => !isOnCooldown(f.id, COOLDOWN_MS));
     return available.length > 0
       ? available[Math.floor(Math.random() * available.length)]
@@ -130,12 +143,17 @@ export function OverlayOrchestrator() {
     return null;
   }, [isOnCooldown]);
 
-  // Build ticker message set
+  // Build ticker message set (shuffled, 12 per batch)
   const tickerMessages = useMemo(() => {
-    const batch: typeof TICKER_MESSAGES = [];
-    const startIdx = tickerContentIndex % TICKER_MESSAGES.length;
-    for (let i = 0; i < 8; i++) {
-      batch.push(TICKER_MESSAGES[(startIdx + i) % TICKER_MESSAGES.length]);
+    const order = shuffledTickerOrder.current;
+    if (order.length === 0) return TICKER_MESSAGES.slice(0, 12);
+
+    const batchSize = 12;
+    const startOffset = (tickerContentIndex * batchSize) % order.length;
+    const batch = [];
+    for (let i = 0; i < batchSize; i++) {
+      const shuffledIdx = order[(startOffset + i) % order.length];
+      batch.push(TICKER_MESSAGES[shuffledIdx]);
     }
     return batch;
   }, [tickerContentIndex]);
@@ -145,7 +163,6 @@ export function OverlayOrchestrator() {
     if (paused) return;
 
     const interval = setInterval(() => {
-      // Don't show cards while other cards are active (one at a time, except ticker)
       const nonTickerActive = activeCards.filter((c) => c.type !== "ticker");
       if (nonTickerActive.length > 0) return;
 
@@ -157,6 +174,10 @@ export function OverlayOrchestrator() {
         panelOpen,
         visualizerActive,
         tickerLastShown: tickerLastShown.current,
+        nextTypeIndex,
+        hasContextContent: !!getContextFact(),
+        hasPromoContent: !!getNextPromo(),
+        hasAffiliateContent: !!getNextAffiliate(),
       });
 
       if (!decision) return;
@@ -180,6 +201,7 @@ export function OverlayOrchestrator() {
         case "context": {
           const fact = getContextFact();
           if (!fact) break;
+          advanceTypeIndex();
           showCard({
             id: nextId(),
             type: "context",
@@ -192,6 +214,7 @@ export function OverlayOrchestrator() {
         case "app-promo": {
           const promo = getNextPromo();
           if (!promo) break;
+          advanceTypeIndex();
           showCard({
             id: nextId(),
             type: "app-promo",
@@ -204,6 +227,7 @@ export function OverlayOrchestrator() {
         case "affiliate": {
           const item = getNextAffiliate();
           if (!item) break;
+          advanceTypeIndex();
           showCard({
             id: nextId(),
             type: "affiliate",
@@ -219,7 +243,7 @@ export function OverlayOrchestrator() {
           break;
         }
       }
-    }, 3000); // Check every 3 seconds
+    }, 3000);
 
     return () => clearInterval(interval);
   }, [
@@ -230,6 +254,7 @@ export function OverlayOrchestrator() {
     isLoading,
     panelOpen,
     visualizerActive,
+    nextTypeIndex,
     getNextHint,
     getContextFact,
     getNextPromo,
@@ -237,6 +262,7 @@ export function OverlayOrchestrator() {
     markHintShown,
     showCard,
     setTickerActive,
+    advanceTypeIndex,
   ]);
 
   // Auto-dismiss cards after their duration
@@ -254,7 +280,6 @@ export function OverlayOrchestrator() {
     return () => timers.forEach(clearTimeout);
   }, [activeCards, dismissCard]);
 
-  // Resolve card content by contentId
   const resolvePromo = (contentId: string) =>
     APP_PROMOS.find((p) => p.id === contentId);
   const resolveAffiliate = (contentId: string) =>

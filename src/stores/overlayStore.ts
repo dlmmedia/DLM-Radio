@@ -26,6 +26,7 @@ interface OverlayState {
   shownHints: Set<string>;
   lastShownAt: number;
   cardHistory: { id: string; shownAt: number }[];
+  nextTypeIndex: number;
 
   paused: boolean;
 
@@ -36,6 +37,7 @@ interface OverlayState {
   markHintShown: (hintId: string) => void;
   setPaused: (paused: boolean) => void;
   isOnCooldown: (contentId: string, cooldownMs: number) => boolean;
+  advanceTypeIndex: () => void;
 }
 
 export const useOverlayStore = create<OverlayState>((set, get) => ({
@@ -47,6 +49,7 @@ export const useOverlayStore = create<OverlayState>((set, get) => ({
   shownHints: new Set(),
   lastShownAt: 0,
   cardHistory: [],
+  nextTypeIndex: 0,
 
   paused: false,
 
@@ -83,4 +86,7 @@ export const useOverlayStore = create<OverlayState>((set, get) => ({
     if (!last) return false;
     return Date.now() - last.shownAt < cooldownMs;
   },
+
+  advanceTypeIndex: () =>
+    set((s) => ({ nextTypeIndex: s.nextTypeIndex + 1 })),
 }));

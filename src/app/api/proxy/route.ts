@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
     const response = await fetch(url, {
       signal: controller.signal,
       headers: {
-        "User-Agent": "DLM-Radio/1.0",
+        "User-Agent": "DLM-World-Radio/1.0",
       },
     });
 

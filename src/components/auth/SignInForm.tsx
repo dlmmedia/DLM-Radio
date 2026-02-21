@@ -42,7 +42,7 @@ export function SignInForm() {
           <Radio className="h-6 w-6 text-primary" />
         </div>
         <CardTitle className="text-2xl font-bold tracking-tight">
-          Welcome to DLM Radio
+          Welcome to DLM World Radio
         </CardTitle>
         <CardDescription>
           Sign in to save favorites, sync across devices, and get curated

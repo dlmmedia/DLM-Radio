@@ -1,9 +1,9 @@
 import type { AppTier } from "./overlay-content";
 
 const MIN_GAP_MS = 15_000;
-const COOLDOWN_MS = 30 * 60 * 1000; // 30 minutes before repeating same card
+const COOLDOWN_MS = 30 * 60 * 1000;
 const MAX_PROMOS_PER_10MIN = 3;
-const TICKER_INTERVAL_MS = 2.5 * 60 * 1000; // every 2.5 minutes
+const TICKER_INTERVAL_MS = 2.5 * 60 * 1000;
 const TICKER_DURATION_MS = 35_000;
 
 export function calculateReadingDuration(text: string): number {
@@ -40,7 +40,19 @@ export function buildWeightedPromoQueue(promoCount: number, tiers: AppTier[]): n
 
 export type OverlayEventType = "hint" | "context" | "app-promo" | "affiliate" | "ticker";
 
-const PRIORITY: OverlayEventType[] = ["hint", "context", "app-promo", "affiliate", "ticker"];
+/**
+ * Weighted rotation pattern ensuring even distribution:
+ * context (2x), app-promo (2x), affiliate (2x) in a balanced cycle.
+ * The pattern avoids same-type streaks while keeping promos visible.
+ */
+const CARD_ROTATION: Exclude<OverlayEventType, "hint" | "ticker">[] = [
+  "context",
+  "app-promo",
+  "affiliate",
+  "app-promo",
+  "context",
+  "affiliate",
+];
 
 export interface ScheduleDecision {
   type: OverlayEventType;
@@ -55,6 +67,10 @@ interface SchedulerContext {
   panelOpen: boolean;
   visualizerActive: boolean;
   tickerLastShown: number;
+  nextTypeIndex: number;
+  hasContextContent: boolean;
+  hasPromoContent: boolean;
+  hasAffiliateContent: boolean;
 }
 
 export function decideNext(ctx: SchedulerContext): ScheduleDecision | null {
@@ -67,34 +83,37 @@ export function decideNext(ctx: SchedulerContext): ScheduleDecision | null {
     return null;
   }
 
-  // Hints take highest priority (only unseen ones)
   if (ctx.hasUnseenHints) {
     return { type: "hint", delay: 0 };
   }
 
-  // Ticker runs on its own cadence
   if (now - ctx.tickerLastShown > TICKER_INTERVAL_MS) {
     return { type: "ticker", delay: 0 };
   }
 
-  // Reduce card frequency when panel is open
   const adjustedGap = ctx.panelOpen ? MIN_GAP_MS * 2 : MIN_GAP_MS;
   if (elapsed < adjustedGap) return null;
 
-  // Context cards when available
-  if (Math.random() < 0.35) {
-    return { type: "context", delay: 0 };
-  }
+  // Walk the rotation pattern, skipping types that have no content or hit rate limits
+  const rotationLen = CARD_ROTATION.length;
+  for (let attempt = 0; attempt < rotationLen; attempt++) {
+    const candidate = CARD_ROTATION[(ctx.nextTypeIndex + attempt) % rotationLen];
 
-  // App promos (respect rate limit)
-  if (ctx.promoCountLast10Min < MAX_PROMOS_PER_10MIN) {
-    if (Math.random() < 0.55) {
-      return { type: "app-promo", delay: 0 };
+    switch (candidate) {
+      case "context":
+        if (ctx.hasContextContent) return { type: "context", delay: 0 };
+        break;
+      case "app-promo":
+        if (ctx.hasPromoContent && ctx.promoCountLast10Min < MAX_PROMOS_PER_10MIN)
+          return { type: "app-promo", delay: 0 };
+        break;
+      case "affiliate":
+        if (ctx.hasAffiliateContent) return { type: "affiliate", delay: 0 };
+        break;
     }
   }
 
-  // Affiliate cards fill the rest
-  return { type: "affiliate", delay: 0 };
+  return null;
 }
 
 export { MIN_GAP_MS, COOLDOWN_MS, MAX_PROMOS_PER_10MIN, TICKER_INTERVAL_MS, TICKER_DURATION_MS };

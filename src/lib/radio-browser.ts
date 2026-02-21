@@ -25,22 +25,23 @@ function setCache(key: string, data: unknown, ttlMs: number) {
   cache.set(key, { data, expires: Date.now() + ttlMs });
 }
 
-async function apiFetch<T>(path: string, ttlMs: number = 120_000): Promise<T> {
-  const cacheKey = path;
-  const cached = getCached<T>(cacheKey);
-  if (cached) return cached;
+async function apiFetch<T>(path: string, ttlMs: number = 120_000, noCache = false): Promise<T> {
+  if (!noCache) {
+    const cached = getCached<T>(path);
+    if (cached) return cached;
+  }
 
   const res = await fetch(`${RADIO_API_BASE}${path}`, {
     headers: {
       "User-Agent": USER_AGENT,
       "Content-Type": "application/json",
     },
-    next: { revalidate: Math.floor(ttlMs / 1000) },
+    ...(noCache ? { cache: "no-store" as const } : { next: { revalidate: Math.floor(ttlMs / 1000) } }),
   });
 
   if (!res.ok) throw new Error(`Radio Browser API error: ${res.status}`);
   const data = (await res.json()) as T;
-  setCache(cacheKey, data, ttlMs);
+  if (!noCache) setCache(path, data, ttlMs);
   return data;
 }
 
@@ -57,7 +58,7 @@ function buildQuery(params: Record<string, string | number | boolean | undefined
 // Station search
 export async function searchStations(params: StationSearchParams): Promise<Station[]> {
   const query = buildQuery({ ...params });
-  return apiFetch<Station[]>(`/json/stations/search${query}`, 120_000);
+  return apiFetch<Station[]>(`/json/stations/search${query}`, 120_000, params.order === "random");
 }
 
 // Station by various fields
@@ -114,6 +115,51 @@ export async function getCodecs(): Promise<CodecResult[]> {
 
 export async function getStates(country: string): Promise<StateResult[]> {
   return apiFetch<StateResult[]>(`/json/states/${encodeURIComponent(country)}/${buildQuery({ order: "stationcount", reverse: true })}`, 3_600_000);
+}
+
+// Curated multi-genre music mix for the default explore view
+const CURATED_GENRES: { tag?: string; tagList?: string }[] = [
+  { tag: "jazz" },
+  { tag: "classical" },
+  { tag: "electronic" },
+  { tagList: "rock,classic rock" },
+  { tagList: "hip hop,r&b" },
+  { tag: "latin" },
+  { tag: "world music" },
+  { tag: "pop" },
+];
+
+export async function getCuratedMusicStations(): Promise<Station[]> {
+  const perGenre = 10;
+  const buckets = await Promise.all(
+    CURATED_GENRES.map((genre) =>
+      searchStations({
+        ...genre,
+        tagExact: genre.tag ? true : undefined,
+        order: "votes",
+        reverse: true,
+        limit: perGenre,
+        hidebroken: true,
+        bitrateMin: 128,
+      }).catch(() => [] as Station[])
+    )
+  );
+
+  const seen = new Set<string>();
+  const interleaved: Station[] = [];
+  const maxLen = Math.max(...buckets.map((b) => b.length));
+
+  for (let i = 0; i < maxLen; i++) {
+    for (const bucket of buckets) {
+      const station = bucket[i];
+      if (station && !seen.has(station.stationuuid)) {
+        seen.add(station.stationuuid);
+        interleaved.push(station);
+      }
+    }
+  }
+
+  return interleaved;
 }
 
 // Geo stations (for globe)

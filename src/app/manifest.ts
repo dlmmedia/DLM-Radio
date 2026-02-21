@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "DLM Radio — Audio-Reactive Globe",
-    short_name: "DLM Radio",
+    name: "DLM World Radio — Audio-Reactive Globe",
+    short_name: "DLM World Radio",
     description:
       "Explore 50,000+ radio stations on an interactive 3D globe with real-time audio-reactive visualizations.",
     start_url: "/",

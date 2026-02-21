@@ -2,18 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { useRadioStore } from "@/stores/radioStore";
-import { searchStations, getTopClickStations } from "@/lib/radio-browser";
+import { searchStations, getCuratedMusicStations } from "@/lib/radio-browser";
 import type { Station } from "@/lib/types";
 import { StationRow } from "./StationRow";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { MapPin, TrendingUp, Globe } from "lucide-react";
+import { MapPin, Music, Globe } from "lucide-react";
 
 export function ExploreTab() {
   const { exploreCity, exploreCountry, exploreCountryCode } = useRadioStore();
   const [localStations, setLocalStations] = useState<Station[]>([]);
   const [popularStations, setPopularStations] = useState<Station[]>([]);
-  const [trendingStations, setTrendingStations] = useState<Station[]>([]);
+  const [curatedStations, setCuratedStations] = useState<Station[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -27,22 +27,22 @@ export function ExploreTab() {
               state: exploreCity || undefined,
               order: "clickcount",
               reverse: true,
-              limit: 20,
+              limit: 40,
               hidebroken: true,
             }),
             searchStations({
               countrycode: exploreCountryCode,
               order: "votes",
               reverse: true,
-              limit: 20,
+              limit: 40,
               hidebroken: true,
             }),
           ]);
           setLocalStations(local);
           setPopularStations(popular);
         } else {
-          const trending = await getTopClickStations(30);
-          setTrendingStations(trending);
+          const curated = await getCuratedMusicStations();
+          setCuratedStations(curated);
         }
       } catch (err) {
         console.error("Failed to load explore data:", err);
@@ -64,22 +64,22 @@ export function ExploreTab() {
     );
   }
 
-  // If no location selected, show trending
+  // If no location selected, show curated music mix
   if (!exploreCountryCode) {
     return (
       <ScrollArea className="h-full">
         <div className="p-4">
           <div className="flex items-center gap-2.5 mb-1">
             <div className="flex items-center justify-center h-7 w-7 rounded-lg bg-primary/10">
-              <TrendingUp className="h-4 w-4 text-primary" />
+              <Music className="h-4 w-4 text-primary" />
             </div>
-            <h2 className="text-base font-bold tracking-tight">Trending Now</h2>
+            <h2 className="text-base font-bold tracking-tight">Music Mix</h2>
           </div>
           <p className="text-xs text-muted-foreground/70 mb-3 ml-[38px]">
-            Click a station on the globe to explore by location
+            Curated stations across genres — click the globe to explore by location
           </p>
           <div className="space-y-0.5">
-            {trendingStations.map((station) => (
+            {curatedStations.map((station) => (
               <StationRow key={station.stationuuid} station={station} showCountry />
             ))}
           </div>

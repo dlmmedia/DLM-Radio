@@ -2,10 +2,21 @@ import type { AudioData } from "@/lib/types";
 import type { CanvasScene } from "./types";
 
 export function createSpectrumBars(): CanvasScene {
-  const smoothedBands = new Float32Array(48);
-  const peakValues = new Float32Array(48);
-  const peakDecay = new Float32Array(48);
-  const peakHoldTime = new Float32Array(48);
+  const barCount = 48;
+  const smoothedBands = new Float32Array(barCount);
+  const peakValues = new Float32Array(barCount);
+  const peakDecay = new Float32Array(barCount);
+  const peakHoldTime = new Float32Array(barCount);
+
+  // Map bars logarithmically across bins 0–20 only (0–14kHz).
+  // Bins 21-31 cover ultrahigh frequencies with virtually no energy
+  // in any music, so we exclude them to keep every bar responsive.
+  const maxBin = 20;
+  const logIndices = new Float32Array(barCount);
+  for (let i = 0; i < barCount; i++) {
+    const t = i / (barCount - 1);
+    logIndices[i] = Math.pow(t, 1.4) * maxBin;
+  }
 
   return {
     type: "canvas2d",
@@ -18,10 +29,9 @@ export function createSpectrumBars(): CanvasScene {
     },
 
     draw(ctx, w, h, audio, time, color) {
-      const barCount = 48;
       const gap = 2;
       const totalGapWidth = (barCount - 1) * gap;
-      const maxBarWidth = (w * 0.75 - totalGapWidth) / barCount;
+      const maxBarWidth = (w * 0.85 - totalGapWidth) / barCount;
       const barWidth = Math.max(3, maxBarWidth);
       const totalWidth = barCount * barWidth + totalGapWidth;
       const startX = (w - totalWidth) / 2;
@@ -32,9 +42,8 @@ export function createSpectrumBars(): CanvasScene {
       const g = parseInt(color.slice(3, 5), 16) || 130;
       const b = parseInt(color.slice(5, 7), 16) || 255;
 
-      // Interpolate 32 raw bands into 48
       for (let i = 0; i < barCount; i++) {
-        const rawIdx = (i / barCount) * 31;
+        const rawIdx = logIndices[i];
         const lo = Math.floor(rawIdx);
         const hi = Math.min(lo + 1, 31);
         const frac = rawIdx - lo;
@@ -42,7 +51,6 @@ export function createSpectrumBars(): CanvasScene {
           (audio.raw[lo] ?? 0) * (1 - frac) + (audio.raw[hi] ?? 0) * frac;
         smoothedBands[i] += (target - smoothedBands[i]) * 0.35;
 
-        // Peak tracking with hold and decay
         if (smoothedBands[i] > peakValues[i]) {
           peakValues[i] = smoothedBands[i];
           peakHoldTime[i] = 30;
@@ -71,7 +79,7 @@ export function createSpectrumBars(): CanvasScene {
       ctx.fillRect(0, 0, w, h);
 
       // Waveform trace behind bars
-      const waveform = audio.raw;
+      const waveform = audio.waveform;
       const wfSamples = Math.min(waveform.length, 256);
       const wfStep = Math.max(1, Math.floor(waveform.length / wfSamples));
       ctx.beginPath();
@@ -88,8 +96,8 @@ export function createSpectrumBars(): CanvasScene {
 
       // Center axis line
       ctx.beginPath();
-      ctx.moveTo(startX - 20, centerY);
-      ctx.lineTo(startX + totalWidth + 20, centerY);
+      ctx.moveTo(startX - 10, centerY);
+      ctx.lineTo(startX + totalWidth + 10, centerY);
       ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, 0.08)`;
       ctx.lineWidth = 1;
       ctx.stroke();
@@ -100,7 +108,6 @@ export function createSpectrumBars(): CanvasScene {
         const barHeight = value * maxBarHeight * 1.3 + 2;
         const x = startX + i * (barWidth + gap);
 
-        // Frequency-based color: low = warm, high = cool
         const t = i / barCount;
         const barR = Math.round(r * (1 - t * 0.3) + 255 * t * 0.2);
         const barG = Math.round(g * (0.6 + t * 0.4));
@@ -110,7 +117,6 @@ export function createSpectrumBars(): CanvasScene {
         const clampG = Math.min(255, barG);
         const clampB = Math.min(255, barB);
 
-        // Upper bar (grows upward from center)
         const topGrad = ctx.createLinearGradient(x, centerY, x, centerY - barHeight);
         topGrad.addColorStop(0, `rgba(${clampR}, ${clampG}, ${clampB}, 0.5)`);
         topGrad.addColorStop(0.4, `rgba(${clampR}, ${clampG}, ${clampB}, 0.85)`);
@@ -128,13 +134,11 @@ export function createSpectrumBars(): CanvasScene {
         ]);
         ctx.fill();
 
-        // Glow on upper bar
         ctx.shadowColor = `rgba(${clampR}, ${clampG}, ${clampB}, ${0.4 + value * 0.5})`;
         ctx.shadowBlur = 10 + value * 20;
         ctx.fill();
         ctx.shadowBlur = 0;
 
-        // Lower bar (grows downward from center, slightly shorter)
         const lowerHeight = barHeight * 0.7;
         const bottomGrad = ctx.createLinearGradient(x, centerY, x, centerY + lowerHeight);
         bottomGrad.addColorStop(0, `rgba(${clampR}, ${clampG}, ${clampB}, 0.4)`);
@@ -146,7 +150,6 @@ export function createSpectrumBars(): CanvasScene {
         ctx.roundRect(x, centerY, barWidth, lowerHeight, [0, 0, radius, radius]);
         ctx.fill();
 
-        // Inner highlight line on upper bar
         if (barHeight > 8) {
           ctx.beginPath();
           ctx.moveTo(x + barWidth * 0.3, centerY);
@@ -156,7 +159,6 @@ export function createSpectrumBars(): CanvasScene {
           ctx.stroke();
         }
 
-        // Peak indicator (floating line that decays)
         const peak = peakValues[i];
         if (peak > 0.05) {
           const peakY = centerY - peak * maxBarHeight - 4;
@@ -175,17 +177,17 @@ export function createSpectrumBars(): CanvasScene {
       }
 
       // Subtle side vignette
-      const vigLeft = ctx.createLinearGradient(0, 0, w * 0.15, 0);
-      vigLeft.addColorStop(0, `rgba(0, 0, 0, 0.3)`);
+      const vigLeft = ctx.createLinearGradient(0, 0, w * 0.06, 0);
+      vigLeft.addColorStop(0, `rgba(0, 0, 0, 0.15)`);
       vigLeft.addColorStop(1, `rgba(0, 0, 0, 0)`);
       ctx.fillStyle = vigLeft;
-      ctx.fillRect(0, 0, w * 0.15, h);
+      ctx.fillRect(0, 0, w * 0.06, h);
 
-      const vigRight = ctx.createLinearGradient(w, 0, w * 0.85, 0);
-      vigRight.addColorStop(0, `rgba(0, 0, 0, 0.3)`);
+      const vigRight = ctx.createLinearGradient(w, 0, w * 0.94, 0);
+      vigRight.addColorStop(0, `rgba(0, 0, 0, 0.15)`);
       vigRight.addColorStop(1, `rgba(0, 0, 0, 0)`);
       ctx.fillStyle = vigRight;
-      ctx.fillRect(w * 0.85, 0, w * 0.15, h);
+      ctx.fillRect(w * 0.94, 0, w * 0.06, h);
     },
   };
 }

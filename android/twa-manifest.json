@@ -1,8 +1,8 @@
 {
   "packageId": "com.dlm.radio",
   "host": "dlm-radio-production.up.railway.app",
-  "name": "DLM Radio",
-  "launcherName": "DLM Radio",
+  "name": "DLM World Radio",
+  "launcherName": "DLM World Radio",
   "display": "standalone",
   "themeColor": "#000000",
   "themeColorDark": "#000000",

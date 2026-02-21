@@ -1,14 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRadioStore } from "@/stores/radioStore";
-import { CURATED_PLAYLISTS } from "@/lib/playlists";
+import { CURATED_PLAYLISTS, PLAYLIST_CATEGORY_LABELS, PLAYLIST_CATEGORY_ORDER } from "@/lib/playlists";
 import { searchStations, getTopClickStations, getTopVoteStations, getLastClickStations, getLastChangeStations } from "@/lib/radio-browser";
-import type { Station, PlaylistDefinition } from "@/lib/types";
+import type { Station, PlaylistDefinition, PlaylistCategory } from "@/lib/types";
 import { StationRow } from "./StationRow";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   TrendingUp,
@@ -16,11 +15,17 @@ import {
   Clock,
   Sparkles,
   ChevronLeft,
+  ChevronRight,
   Shuffle,
   Loader2,
 } from "lucide-react";
 
 type View = "playlists" | "playlist-detail" | "popularity" | "popularity-detail";
+
+const playlistsByCategory = PLAYLIST_CATEGORY_ORDER.reduce((acc, cat) => {
+  acc[cat] = CURATED_PLAYLISTS.filter((p) => p.category === cat);
+  return acc;
+}, {} as Record<PlaylistCategory, PlaylistDefinition[]>);
 
 export function BrowseTab() {
   const [view, setView] = useState<View>("playlists");
@@ -29,7 +34,17 @@ export function BrowseTab() {
   const [popularityStations, setPopularityStations] = useState<Station[]>([]);
   const [popularityType, setPopularityType] = useState("");
   const [loading, setLoading] = useState(false);
-  const { setStationList, setStation } = useRadioStore();
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(["featured"]));
+  const { setStationList, setStation, fetchRandomStation } = useRadioStore();
+
+  const toggleCategory = (cat: string) => {
+    setExpandedCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(cat)) next.delete(cat);
+      else next.add(cat);
+      return next;
+    });
+  };
 
   const openPlaylist = async (playlist: PlaylistDefinition) => {
     setSelectedPlaylist(playlist);
@@ -52,16 +67,16 @@ export function BrowseTab() {
       let stations: Station[] = [];
       switch (type) {
         case "topclick":
-          stations = await getTopClickStations(50);
+          stations = await getTopClickStations(100);
           break;
         case "topvote":
-          stations = await getTopVoteStations(50);
+          stations = await getTopVoteStations(100);
           break;
         case "lastclick":
-          stations = await getLastClickStations(50);
+          stations = await getLastClickStations(100);
           break;
         case "lastchange":
-          stations = await getLastChangeStations(50);
+          stations = await getLastChangeStations(100);
           break;
       }
       setPopularityStations(stations);
@@ -73,18 +88,7 @@ export function BrowseTab() {
 
   const handleRandomRide = async () => {
     setLoading(true);
-    try {
-      const stations = await searchStations({
-        order: "random",
-        limit: 1,
-        hidebroken: true,
-        has_geo_info: true,
-      });
-      if (stations.length > 0) {
-        setStation(stations[0]);
-        setStationList(stations, 0);
-      }
-    } catch {}
+    await fetchRandomStation();
     setLoading(false);
   };
 
@@ -174,31 +178,24 @@ export function BrowseTab() {
 
   return (
     <ScrollArea className="h-full">
-      <div className="p-4 space-y-5">
-        {/* Curated Playlists */}
-        <div>
-          <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
-            Curated Playlists
-          </h2>
-          <div className="grid grid-cols-2 gap-2">
-            {CURATED_PLAYLISTS.map((playlist) => (
-              <button
-                key={playlist.id}
-                onClick={() => openPlaylist(playlist)}
-                className="text-left p-3 rounded-lg border border-border/40 hover:bg-accent/50 transition-colors group"
-              >
-                <div
-                  className="w-6 h-1 rounded-full mb-2"
-                  style={{ backgroundColor: playlist.color }}
-                />
-                <div className="text-sm font-medium">{playlist.name}</div>
-                <div className="text-[10px] text-muted-foreground mt-0.5 line-clamp-1">
-                  {playlist.description}
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
+      <div className="p-4 space-y-4">
+        {/* Playlist Categories */}
+        {PLAYLIST_CATEGORY_ORDER.map((cat) => {
+          const playlists = playlistsByCategory[cat];
+          const isExpanded = expandedCategories.has(cat);
+
+          return (
+            <PlaylistSection
+              key={cat}
+              label={PLAYLIST_CATEGORY_LABELS[cat]}
+              count={playlists.length}
+              expanded={isExpanded}
+              onToggle={() => toggleCategory(cat)}
+              playlists={playlists}
+              onOpen={openPlaylist}
+            />
+          );
+        })}
 
         {/* Random Ride */}
         <button
@@ -255,6 +252,63 @@ export function BrowseTab() {
         </div>
       </div>
     </ScrollArea>
+  );
+}
+
+function PlaylistSection({
+  label,
+  count,
+  expanded,
+  onToggle,
+  playlists,
+  onOpen,
+}: {
+  label: string;
+  count: number;
+  expanded: boolean;
+  onToggle: () => void;
+  playlists: PlaylistDefinition[];
+  onOpen: (p: PlaylistDefinition) => void;
+}) {
+  return (
+    <div>
+      <button
+        onClick={onToggle}
+        className="w-full flex items-center justify-between mb-2 group"
+      >
+        <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+          {label}
+          <span className="ml-1.5 text-muted-foreground/50 normal-case tracking-normal">
+            {count}
+          </span>
+        </h2>
+        <ChevronRight
+          className={`h-3.5 w-3.5 text-muted-foreground/50 transition-transform duration-200 ${
+            expanded ? "rotate-90" : ""
+          }`}
+        />
+      </button>
+      {expanded && (
+        <div className="grid grid-cols-2 gap-2">
+          {playlists.map((playlist) => (
+            <button
+              key={playlist.id}
+              onClick={() => onOpen(playlist)}
+              className="text-left p-3 rounded-lg border border-border/40 hover:bg-accent/50 transition-colors group"
+            >
+              <div
+                className="w-6 h-1 rounded-full mb-2"
+                style={{ backgroundColor: playlist.color }}
+              />
+              <div className="text-sm font-medium">{playlist.name}</div>
+              <div className="text-[10px] text-muted-foreground mt-0.5 line-clamp-1">
+                {playlist.description}
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 

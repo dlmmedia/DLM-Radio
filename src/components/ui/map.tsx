@@ -16,7 +16,7 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
-import { X, Minus, Plus, Locate, Maximize, Loader2 } from "lucide-react";
+import { X, Minus, Plus, Locate, Maximize, Loader2, Home } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -224,17 +224,21 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
       ...viewport,
     });
 
+    const projectionSetRef = { done: false };
     const styleDataHandler = () => {
       clearStyleTimeout();
-      // Delay to ensure style is fully processed before allowing layer operations
-      // This is a workaround to avoid race conditions with the style loading
-      // else we have to force update every layer on setStyle change
       styleTimeoutRef.current = setTimeout(() => {
         setIsStyleLoaded(true);
-        if (projection) {
-          map.setProjection(projection);
+        if (projection && !projectionSetRef.done) {
+          try {
+            const current = map.getProjection?.();
+            if (!current || current.type !== projection.type) {
+              projectionSetRef.done = true;
+              map.setProjection(projection);
+            }
+          } catch {}
         }
-      }, 100);
+      }, 150);
     };
     const loadHandler = () => setIsLoaded(true);
 
@@ -713,6 +717,10 @@ type MapControlsProps = {
   showLocate?: boolean;
   /** Show fullscreen toggle button (default: false) */
   showFullscreen?: boolean;
+  /** Show reset button to return to default globe view (default: false) */
+  showReset?: boolean;
+  /** View to fly to when reset is pressed. Defaults to a zoomed-out centered globe. */
+  resetView?: Partial<MapViewport>;
   /** Additional CSS classes for the controls container */
   className?: string;
   /** Callback with user coordinates when located */
@@ -761,12 +769,21 @@ function ControlButton({
   );
 }
 
+const DEFAULT_RESET_VIEW: MapViewport = {
+  center: [0, 20],
+  zoom: 2,
+  bearing: 0,
+  pitch: 0,
+};
+
 function MapControls({
   position = "bottom-right",
   showZoom = true,
   showCompass = false,
   showLocate = false,
   showFullscreen = false,
+  showReset = false,
+  resetView,
   className,
   onLocate,
 }: MapControlsProps) {
@@ -774,11 +791,17 @@ function MapControls({
   const [waitingForLocation, setWaitingForLocation] = useState(false);
 
   const handleZoomIn = useCallback(() => {
-    map?.zoomTo(map.getZoom() + 1, { duration: 300 });
+    if (!map) return;
+    map.stop();
+    const nextZoom = Math.min(map.getZoom() + 1, map.getMaxZoom());
+    map.easeTo({ zoom: nextZoom, duration: 300 });
   }, [map]);
 
   const handleZoomOut = useCallback(() => {
-    map?.zoomTo(map.getZoom() - 1, { duration: 300 });
+    if (!map) return;
+    map.stop();
+    const nextZoom = Math.max(map.getZoom() - 1, map.getMinZoom());
+    map.easeTo({ zoom: nextZoom, duration: 300 });
   }, [map]);
 
   const handleResetBearing = useCallback(() => {
@@ -811,14 +834,27 @@ function MapControls({
   }, [map, onLocate]);
 
   const handleFullscreen = useCallback(() => {
-    const container = map?.getContainer();
-    if (!container) return;
     if (document.fullscreenElement) {
       document.exitFullscreen();
     } else {
-      container.requestFullscreen();
+      document.documentElement.requestFullscreen();
     }
-  }, [map]);
+  }, []);
+
+  const handleReset = useCallback(() => {
+    if (!map) return;
+    map.stop();
+    const view = { ...DEFAULT_RESET_VIEW, ...resetView };
+    map.flyTo({
+      center: view.center,
+      zoom: view.zoom,
+      bearing: view.bearing,
+      pitch: view.pitch,
+      duration: 1800,
+      essential: true,
+      curve: 1.4,
+    });
+  }, [map, resetView]);
 
   return (
     <div
@@ -862,6 +898,13 @@ function MapControls({
         <ControlGroup>
           <ControlButton onClick={handleFullscreen} label="Toggle fullscreen">
             <Maximize className="size-4" />
+          </ControlButton>
+        </ControlGroup>
+      )}
+      {showReset && (
+        <ControlGroup>
+          <ControlButton onClick={handleReset} label="Reset globe view">
+            <Home className="size-4" />
           </ControlButton>
         </ControlGroup>
       )}
@@ -1176,6 +1219,12 @@ type MapClusterLayerProps<
   clusterThresholds?: [number, number];
   /** Color for unclustered individual points (default: "#3b82f6") */
   pointColor?: string;
+  /** Radius for unclustered individual points in pixels (default: 5) */
+  pointRadius?: number;
+  /** Stroke color for unclustered points (default: "#fff") */
+  pointStrokeColor?: string;
+  /** Stroke color for cluster circles (default: "#fff") */
+  clusterStrokeColor?: string;
   /** Callback when an unclustered point is clicked */
   onPointClick?: (
     feature: GeoJSON.Feature<GeoJSON.Point, P>,
@@ -1198,6 +1247,9 @@ function MapClusterLayer<
   clusterColors = ["#22c55e", "#eab308", "#ef4444"],
   clusterThresholds = [100, 750],
   pointColor = "#3b82f6",
+  pointRadius = 5,
+  pointStrokeColor = "#fff",
+  clusterStrokeColor = "#fff",
   onPointClick,
   onClusterClick,
 }: MapClusterLayerProps<P>) {
@@ -1212,6 +1264,9 @@ function MapClusterLayer<
     clusterColors,
     clusterThresholds,
     pointColor,
+    pointRadius,
+    pointStrokeColor,
+    clusterStrokeColor,
   });
 
   // Add source and layers on mount
@@ -1253,7 +1308,7 @@ function MapClusterLayer<
           40,
         ],
         "circle-stroke-width": 1,
-        "circle-stroke-color": "#fff",
+        "circle-stroke-color": clusterStrokeColor,
         "circle-opacity": 0.85,
       },
     });
@@ -1281,9 +1336,9 @@ function MapClusterLayer<
       filter: ["!", ["has", "point_count"]],
       paint: {
         "circle-color": pointColor,
-        "circle-radius": 5,
+        "circle-radius": pointRadius,
         "circle-stroke-width": 2,
-        "circle-stroke-color": "#fff",
+        "circle-stroke-color": pointStrokeColor,
       },
     });
 
@@ -1322,33 +1377,46 @@ function MapClusterLayer<
       prev.clusterThresholds !== clusterThresholds;
 
     // Update cluster layer colors and sizes
-    if (map.getLayer(clusterLayerId) && colorsChanged) {
-      map.setPaintProperty(clusterLayerId, "circle-color", [
-        "step",
-        ["get", "point_count"],
-        clusterColors[0],
-        clusterThresholds[0],
-        clusterColors[1],
-        clusterThresholds[1],
-        clusterColors[2],
-      ]);
-      map.setPaintProperty(clusterLayerId, "circle-radius", [
-        "step",
-        ["get", "point_count"],
-        20,
-        clusterThresholds[0],
-        30,
-        clusterThresholds[1],
-        40,
-      ]);
+    if (map.getLayer(clusterLayerId)) {
+      if (colorsChanged) {
+        map.setPaintProperty(clusterLayerId, "circle-color", [
+          "step",
+          ["get", "point_count"],
+          clusterColors[0],
+          clusterThresholds[0],
+          clusterColors[1],
+          clusterThresholds[1],
+          clusterColors[2],
+        ]);
+        map.setPaintProperty(clusterLayerId, "circle-radius", [
+          "step",
+          ["get", "point_count"],
+          20,
+          clusterThresholds[0],
+          30,
+          clusterThresholds[1],
+          40,
+        ]);
+      }
+      if (prev.clusterStrokeColor !== clusterStrokeColor) {
+        map.setPaintProperty(clusterLayerId, "circle-stroke-color", clusterStrokeColor);
+      }
     }
 
-    // Update unclustered point layer color
-    if (map.getLayer(unclusteredLayerId) && prev.pointColor !== pointColor) {
-      map.setPaintProperty(unclusteredLayerId, "circle-color", pointColor);
+    // Update unclustered point layer
+    if (map.getLayer(unclusteredLayerId)) {
+      if (prev.pointColor !== pointColor) {
+        map.setPaintProperty(unclusteredLayerId, "circle-color", pointColor);
+      }
+      if (prev.pointRadius !== pointRadius) {
+        map.setPaintProperty(unclusteredLayerId, "circle-radius", pointRadius);
+      }
+      if (prev.pointStrokeColor !== pointStrokeColor) {
+        map.setPaintProperty(unclusteredLayerId, "circle-stroke-color", pointStrokeColor);
+      }
     }
 
-    stylePropsRef.current = { clusterColors, clusterThresholds, pointColor };
+    stylePropsRef.current = { clusterColors, clusterThresholds, pointColor, pointRadius, pointStrokeColor, clusterStrokeColor };
   }, [
     isLoaded,
     map,
@@ -1357,6 +1425,9 @@ function MapClusterLayer<
     clusterColors,
     clusterThresholds,
     pointColor,
+    pointRadius,
+    pointStrokeColor,
+    clusterStrokeColor,
   ]);
 
   // Handle click events

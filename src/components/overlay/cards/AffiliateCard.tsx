@@ -1,6 +1,6 @@
 "use client";
 
-import { OverlayCard } from "../OverlayCard";
+import { OverlayCard, type AnimationPreset } from "../OverlayCard";
 import type { AffiliateItem } from "@/lib/overlay-content";
 import { Headphones, Music, Cpu, Sparkles } from "lucide-react";
 
@@ -18,6 +18,20 @@ const categoryLabels = {
   lifestyle: "Curated",
 } as const;
 
+const categoryPresets: Record<string, AnimationPreset> = {
+  "music-gear": "fade-blur",
+  streaming: "drift-up",
+  tech: "slide-left",
+  lifestyle: "slide-right",
+};
+
+const categoryWidths: Record<string, string> = {
+  "music-gear": "w-[290px]",
+  streaming: "w-[260px]",
+  tech: "w-[270px]",
+  lifestyle: "w-[280px]",
+};
+
 interface AffiliateCardProps {
   item: AffiliateItem;
   onDismiss: () => void;
@@ -25,20 +39,21 @@ interface AffiliateCardProps {
 
 export function AffiliateCard({ item, onDismiss }: AffiliateCardProps) {
   const Icon = categoryIcons[item.category];
+  const preset = categoryPresets[item.category] ?? "fade-blur";
+  const widthClass = categoryWidths[item.category] ?? "w-[280px]";
 
   return (
-    <OverlayCard preset="fade-blur" className="group">
+    <OverlayCard preset={preset} className="group">
       <a
         href={item.url}
         target="_blank"
         rel="noopener noreferrer"
         onClick={(e) => e.stopPropagation()}
-        className="flex items-center gap-3 rounded-xl bg-white/70 dark:bg-black/45 backdrop-blur-2xl border border-black/[0.1] dark:border-white/[0.06] px-3.5 py-3 shadow-2xl shadow-black/10 dark:shadow-black/40 transition-all duration-300 hover:bg-white/80 dark:hover:bg-black/55 hover:border-black/[0.15] dark:hover:border-white/[0.1] w-[280px]"
+        className={`flex items-center gap-3 rounded-xl bg-white/70 dark:bg-black/45 backdrop-blur-2xl border border-black/[0.1] dark:border-white/[0.06] px-3.5 py-3 shadow-2xl shadow-black/10 dark:shadow-black/40 transition-all duration-300 hover:bg-white/80 dark:hover:bg-black/55 hover:border-black/[0.15] dark:hover:border-white/[0.1] ${widthClass}`}
         style={{
           boxShadow: `0 0 24px ${item.accent}08, 0 8px 32px rgba(0,0,0,0.1)`,
         }}
       >
-        {/* Icon */}
         <div
           className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg"
           style={{
@@ -49,7 +64,6 @@ export function AffiliateCard({ item, onDismiss }: AffiliateCardProps) {
           <Icon className="h-4.5 w-4.5" style={{ color: item.accent }} />
         </div>
 
-        {/* Content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
             <span className="text-[10px] font-medium uppercase tracking-widest" style={{ color: `${item.accent}99` }}>
@@ -64,7 +78,6 @@ export function AffiliateCard({ item, onDismiss }: AffiliateCardProps) {
           </p>
         </div>
 
-        {/* CTA */}
         <span
           className="flex-shrink-0 rounded-full px-2.5 py-1 text-[10px] font-medium transition-all duration-200 group-hover:brightness-125"
           style={{

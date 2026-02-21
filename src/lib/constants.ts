@@ -1,5 +1,5 @@
 export const RADIO_API_BASE = process.env.NEXT_PUBLIC_RADIO_API || "https://de1.api.radio-browser.info";
-export const USER_AGENT = "DLM-Radio/1.0";
+export const USER_AGENT = "DLM-World-Radio/1.0";
 
 export const GENRE_COLORS: Record<string, string> = {
   pop: "#ec4899",
@@ -11,6 +11,7 @@ export const GENRE_COLORS: Record<string, string> = {
   alternative: "#ef4444",
   jazz: "#3b82f6",
   blues: "#3b82f6",
+  soul: "#2563eb",
   classical: "#f59e0b",
   electronic: "#8b5cf6",
   dance: "#8b5cf6",
@@ -20,9 +21,11 @@ export const GENRE_COLORS: Record<string, string> = {
   news: "#eab308",
   talk: "#eab308",
   information: "#eab308",
+  sports: "#22c55e",
   country: "#22c55e",
   folk: "#22c55e",
   world: "#22c55e",
+  "world music": "#22c55e",
   "80s": "#f97316",
   "90s": "#f97316",
   oldies: "#f97316",
@@ -30,6 +33,25 @@ export const GENRE_COLORS: Record<string, string> = {
   reggae: "#16a34a",
   christian: "#a855f7",
   "public radio": "#06b6d4",
+  "hip hop": "#f43f5e",
+  rap: "#f43f5e",
+  "r&b": "#f43f5e",
+  ambient: "#14b8a6",
+  chillout: "#14b8a6",
+  lofi: "#14b8a6",
+  reggaeton: "#ea580c",
+  tropical: "#ea580c",
+  kpop: "#ec4899",
+  jpop: "#ec4899",
+  anime: "#ec4899",
+  punk: "#b91c1c",
+  hardcore: "#b91c1c",
+  comedy: "#d97706",
+  meditation: "#22d3ee",
+  relaxation: "#22d3ee",
+  afrobeat: "#ca8a04",
+  african: "#ca8a04",
+  arabic: "#059669",
 };
 
 export function getGenreColor(tags: string): string {

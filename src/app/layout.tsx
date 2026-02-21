@@ -28,13 +28,13 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "DLM Radio — Audio-Reactive Globe",
+  title: "DLM World Radio — Audio-Reactive Globe",
   description:
     "Explore 50,000+ radio stations on an interactive 3D globe with real-time audio-reactive visualizations.",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "DLM Radio",
+    title: "DLM World Radio",
   },
   icons: {
     icon: [

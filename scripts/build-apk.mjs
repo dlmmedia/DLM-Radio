@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Build script for generating the DLM Radio TWA APK using @bubblewrap/core.
+ * Build script for generating the DLM World Radio TWA APK using @bubblewrap/core.
  *
  * Prerequisites (one-time setup):
  *   brew install openjdk
@@ -53,7 +53,7 @@ function ensureKeystore() {
 
   console.log('[build-apk] Generating signing keystore...');
   const keytoolCmd = join(JAVA_BIN, 'keytool');
-  const dname = 'CN=DLM Radio,OU=Development,O=DLM Media,L=Unknown,ST=Unknown,C=US';
+  const dname = 'CN=DLM World Radio,OU=Development,O=DLM Media,L=Unknown,ST=Unknown,C=US';
 
   execSync([
     `"${keytoolCmd}"`,

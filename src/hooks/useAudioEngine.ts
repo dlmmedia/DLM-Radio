@@ -118,8 +118,13 @@ export function useAudioEngine() {
     if (!audio || !currentStation) return;
 
     const rawUrl = currentStation.url_resolved || currentStation.url;
-    if (lastStationRef.current === rawUrl) return;
+    const sameUrl = lastStationRef.current === rawUrl;
     lastStationRef.current = rawUrl;
+
+    if (sameUrl) {
+      setLoading(false);
+      return;
+    }
 
     recordClick(currentStation.stationuuid);
 
@@ -203,7 +208,7 @@ export function useAudioEngine() {
       navigator.mediaSession.metadata = new MediaMetadata({
         title: currentStation.name,
         artist: genre,
-        album: "DLM Radio",
+        album: "DLM World Radio",
         artwork: currentStation.favicon
           ? [
               { src: currentStation.favicon, sizes: "96x96", type: "image/png" },

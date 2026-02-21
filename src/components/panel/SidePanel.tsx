@@ -41,6 +41,7 @@ export function SidePanel() {
           />
 
           <motion.div
+            data-sidebar-panel
             initial={{ x: -360, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: -360, opacity: 0 }}
@@ -64,7 +65,7 @@ export function SidePanel() {
                   <Radio className="h-5 w-5 text-primary" />
                 </motion.div>
                 <h1 className="text-xl font-bold tracking-tight bg-gradient-to-r from-primary via-foreground to-primary bg-clip-text text-transparent bg-[length:200%_auto] animate-shimmer">
-                  DLM Radio
+                  DLM World Radio
                 </h1>
               </motion.div>
               <div className="flex items-center gap-1">

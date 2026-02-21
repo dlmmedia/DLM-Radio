@@ -89,7 +89,7 @@ export function SettingsTab() {
             {isInstalled && (
               <div className="flex items-center gap-2 text-xs text-green-600 dark:text-green-400 font-medium">
                 <Check className="h-3.5 w-3.5" />
-                <span>DLM Radio is installed on this device</span>
+                <span>DLM World Radio is installed on this device</span>
               </div>
             )}
 
@@ -254,7 +254,7 @@ export function SettingsTab() {
           <div className="space-y-2 text-sm">
             <div className="flex items-center gap-2">
               <Radio className="h-4 w-4 text-primary" />
-              <span className="font-medium">DLM Radio</span>
+              <span className="font-medium">DLM World Radio</span>
             </div>
             <p className="text-xs text-muted-foreground">
               An audio-reactive radio experience with an interactive globe

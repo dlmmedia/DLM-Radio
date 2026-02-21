@@ -4,6 +4,7 @@ import { create } from "zustand";
 import type { Station, PanelTab } from "@/lib/types";
 import { MOOD_ORDER, type VisualMood } from "@/lib/visual-moods";
 import type { SceneId } from "@/components/visualizer/scenes/types";
+import { searchStations } from "@/lib/radio-browser";
 
 interface RadioState {
   // Playback
@@ -57,6 +58,7 @@ interface RadioState {
   setVisualizerScene: (scene: SceneId | "auto") => void;
   setAutoVisualizer: (auto: boolean) => void;
   setIdleTimeout: (seconds: number) => void;
+  fetchRandomStation: () => Promise<void>;
 }
 
 export const useRadioStore = create<RadioState>((set, get) => ({
@@ -146,4 +148,36 @@ export const useRadioStore = create<RadioState>((set, get) => ({
   setVisualizerScene: (scene) => set({ visualizerScene: scene }),
   setAutoVisualizer: (auto) => set({ autoVisualizer: auto }),
   setIdleTimeout: (seconds) => set({ idleTimeout: Math.max(30, seconds) }),
+
+  fetchRandomStation: async () => {
+    try {
+      const stations = await searchStations({
+        order: "random",
+        limit: 20,
+        hidebroken: true,
+        has_geo_info: true,
+      });
+      if (stations.length === 0) return;
+
+      const current = get().currentStation;
+      const candidates = current
+        ? stations.filter((s) => s.stationuuid !== current.stationuuid)
+        : stations;
+      const pick =
+        candidates.length > 0
+          ? candidates[Math.floor(Math.random() * candidates.length)]
+          : stations[0];
+
+      set({
+        currentStation: pick,
+        isPlaying: true,
+        isLoading: true,
+        drawerStation: null,
+        stationList: [pick],
+        stationListIndex: 0,
+      });
+    } catch {
+      // Network error — silently ignore
+    }
+  },
 }));

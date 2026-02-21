@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { TickerMessage } from "@/lib/overlay-content";
 
@@ -12,27 +12,44 @@ interface TickerCrawlProps {
 
 export function TickerCrawl({ messages, visible, onComplete }: TickerCrawlProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
+  const [ready, setReady] = useState(false);
   const [contentWidth, setContentWidth] = useState(0);
   const [containerWidth, setContainerWidth] = useState(0);
-  const innerRef = useRef<HTMLDivElement>(null);
 
   const joined = messages.map((m) => m.text).join("   \u2022   ");
 
+  const measure = useCallback(() => {
+    const cw = innerRef.current?.scrollWidth ?? 0;
+    const vw = containerRef.current?.offsetWidth ?? 0;
+    if (cw > 0 && vw > 0) {
+      setContentWidth(cw);
+      setContainerWidth(vw);
+      setReady(true);
+    }
+  }, []);
+
   useEffect(() => {
-    if (!visible) return;
-    if (innerRef.current) setContentWidth(innerRef.current.scrollWidth);
-    if (containerRef.current) setContainerWidth(containerRef.current.offsetWidth);
-  }, [visible, joined]);
+    if (!visible) {
+      setReady(false);
+      return;
+    }
+    // Measure after a frame so the DOM has rendered the hidden content
+    const raf = requestAnimationFrame(() => {
+      measure();
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [visible, joined, measure]);
 
   const totalDistance = contentWidth + containerWidth;
-  const speed = 60; // px per second
+  const speed = 60;
   const duration = totalDistance / speed;
 
   useEffect(() => {
-    if (!visible) return;
+    if (!visible || !ready) return;
     const timer = setTimeout(onComplete, duration * 1000 + 500);
     return () => clearTimeout(timer);
-  }, [visible, duration, onComplete]);
+  }, [visible, ready, duration, onComplete]);
 
   return (
     <AnimatePresence>
@@ -46,9 +63,21 @@ export function TickerCrawl({ messages, visible, onComplete }: TickerCrawlProps)
         >
           <motion.div
             ref={innerRef}
-            initial={{ x: containerWidth || "100%" }}
-            animate={{ x: -(contentWidth || 0) }}
-            transition={{ duration, ease: "linear" }}
+            initial={false}
+            animate={
+              ready
+                ? { x: -contentWidth }
+                : { x: containerWidth || "100%" }
+            }
+            transition={
+              ready
+                ? { duration, ease: "linear" }
+                : { duration: 0 }
+            }
+            style={{
+              willChange: "transform",
+              x: ready ? undefined : containerWidth || "100%",
+            }}
             className="absolute top-0 flex h-full items-center whitespace-nowrap"
           >
             {messages.map((msg, i) => (
@@ -59,13 +88,15 @@ export function TickerCrawl({ messages, visible, onComplete }: TickerCrawlProps)
                       ? "font-medium text-black/70 dark:text-white/50"
                       : msg.type === "fact"
                         ? "font-normal text-black/60 dark:text-white/40 italic"
-                        : "font-normal text-black/60 dark:text-white/40"
+                        : msg.type === "quote"
+                          ? "font-normal text-black/65 dark:text-white/45 italic"
+                          : "font-normal text-black/60 dark:text-white/40"
                   }`}
                 >
                   {msg.text}
                 </span>
                 {i < messages.length - 1 && (
-                  <span className="mx-4 text-[8px] text-black/30 dark:text-white/20">{"\u2022"}</span>
+                  <span className="mx-6 text-[8px] text-black/30 dark:text-white/20">{"\u2022"}</span>
                 )}
               </span>
             ))}

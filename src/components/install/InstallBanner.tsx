@@ -77,7 +77,7 @@ export function InstallBanner() {
                 </div>
                 <div className="min-w-0">
                   <h3 className="text-base font-semibold tracking-tight">
-                    Get the DLM Radio App
+                    Get the DLM World Radio App
                   </h3>
                   <p className="text-xs text-muted-foreground mt-0.5">
                     {platform === "ios"

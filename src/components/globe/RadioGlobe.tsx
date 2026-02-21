@@ -180,32 +180,40 @@ function GlobeContent() {
           }
 
           if (!isDark) {
-            // Warm up water in light mode
+            // Realistic ocean blue with zoom-dependent depth
             if (layer.id === "water" && layer.type === "fill") {
-              map.setPaintProperty(layer.id, "fill-color", "#B8D8E8");
+              map.setPaintProperty(layer.id, "fill-color", [
+                "interpolate", ["linear"], ["zoom"],
+                0, "#4A90D9",
+                6, "#6BAED6",
+                10, "#89C4E8",
+              ]);
               continue;
             }
 
-            // Warm up land-related fills (grays → warm cream/beige)
+            // Natural land fills with zoom-dependent opacity for readability
             if (layer.type === "fill") {
               const id = layer.id;
+              const zoomOpacity = [
+                "interpolate", ["linear"], ["zoom"],
+                0, 0.7,
+                5, 0.85,
+                8, 0.95,
+              ];
               if (id.startsWith("landcover")) {
                 try {
-                  const c = map.getPaintProperty(id, "fill-color");
-                  if (typeof c === "string" && isGrayish(c)) {
-                    map.setPaintProperty(id, "fill-color", warmTint(c));
-                  }
+                  map.setPaintProperty(id, "fill-color", "#E8DCC8");
+                  map.setPaintProperty(id, "fill-opacity", zoomOpacity);
                 } catch {}
               } else if (id.startsWith("landuse")) {
                 try {
-                  const c = map.getPaintProperty(id, "fill-color");
-                  if (typeof c === "string" && isGrayish(c)) {
-                    map.setPaintProperty(id, "fill-color", warmTint(c));
-                  }
+                  map.setPaintProperty(id, "fill-color", "#E8DCC8");
+                  map.setPaintProperty(id, "fill-opacity", zoomOpacity);
                 } catch {}
               } else if (id === "park" || id.startsWith("park")) {
                 try {
                   map.setPaintProperty(id, "fill-color", "#D8EDD0");
+                  map.setPaintProperty(id, "fill-opacity", zoomOpacity);
                 } catch {}
               }
             }
@@ -230,7 +238,16 @@ function GlobeContent() {
             // Warm up building fills
             if (layer.type === "fill" && layer.id.startsWith("building")) {
               try {
-                map.setPaintProperty(layer.id, "fill-color", "#E8E2DA");
+                map.setPaintProperty(layer.id, "fill-color", "#F0E6D2");
+              } catch {}
+            }
+
+            // Text label halos for readability over the sky background
+            // Skip cluster count labels (dynamically added) to avoid bloating them
+            if (layer.type === "symbol" && !layer.id.includes("cluster")) {
+              try {
+                map.setPaintProperty(layer.id, "text-halo-color", "rgba(255,255,255,0.85)");
+                map.setPaintProperty(layer.id, "text-halo-width", 1.5);
               } catch {}
             }
           }
@@ -371,7 +388,10 @@ function GlobeContent() {
           clusterRadius={60}
           clusterColors={["#22c55e", "#eab308", "#ef4444"]}
           clusterThresholds={[50, 500]}
-          pointColor="#3b82f6"
+          pointColor={isDark ? "#3b82f6" : "#2563eb"}
+          pointRadius={isDark ? 5 : 7}
+          pointStrokeColor={isDark ? "#fff" : "#1e3a5f"}
+          clusterStrokeColor={isDark ? "#fff" : "#1e3a5f"}
           onPointClick={handlePointClick}
         />
       )}
@@ -391,6 +411,7 @@ function GlobeContent() {
         showLocate
         showCompass
         showFullscreen
+        showReset
         className="bottom-20 right-3"
       />
     </>

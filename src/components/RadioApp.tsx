@@ -9,7 +9,6 @@ import { useHistory } from "@/hooks/useHistory";
 import { useIdleDetector } from "@/hooks/useIdleDetector";
 import { useSidebarAutoCollapse } from "@/hooks/useSidebarAutoCollapse";
 import { recordListening } from "@/lib/recommendations";
-import { searchStations } from "@/lib/radio-browser";
 import { PlayerBar } from "./player/PlayerBar";
 import { StationDrawer } from "./station/StationDrawer";
 
@@ -99,11 +98,10 @@ export function RadioApp() {
     volume,
     setPanelTab,
     setDrawerStation,
-    setStation,
-    setStationList,
     cycleVisualMood,
     visualizerActive,
     setVisualizerActive,
+    fetchRandomStation,
   } = useRadioStore();
 
   // Auto-rotate visual mood every 4 minutes while playing
@@ -128,7 +126,7 @@ export function RadioApp() {
 
   // Keyboard shortcuts
   const handleKeyDown = useCallback(
-    async (e: KeyboardEvent) => {
+    (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
       if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") return;
 
@@ -167,18 +165,8 @@ export function RadioApp() {
           break;
         case "r":
         case "R":
-          try {
-            const stations = await searchStations({
-              order: "random",
-              limit: 1,
-              hidebroken: true,
-              has_geo_info: true,
-            });
-            if (stations.length > 0) {
-              setStation(stations[0]);
-              setStationList(stations, 0);
-            }
-          } catch {}
+          e.preventDefault();
+          useRadioStore.getState().fetchRandomStation();
           break;
         case "Escape": {
           const escState = useRadioStore.getState();
@@ -226,8 +214,6 @@ export function RadioApp() {
       togglePanel,
       setPanelTab,
       setDrawerStation,
-      setStation,
-      setStationList,
       setVisualizerActive,
       cycleVisualMood,
     ]
